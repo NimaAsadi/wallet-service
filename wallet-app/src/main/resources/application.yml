@@ -1,0 +1,138 @@
+server:
+  port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: wallet-service
+
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/wallet}
+    username: ${DB_USERNAME:wallet}
+    password: ${DB_PASSWORD:wallet}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 80
+      minimum-idle: 10
+      connection-timeout: 3000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    listener:
+      concurrency: 16
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${keycloak.user.jwk-set-uri}
+
+keycloak:
+  user:
+    jwk-set-uri: ${KEYCLOAK_USER_JWK_URI:http://localhost:8180/realms/user/protocol/openid-connect/certs}
+  admin:
+    jwk-set-uri: ${KEYCLOAK_ADMIN_JWK_URI:http://localhost:8180/realms/admin/protocol/openid-connect/certs}
+  bridge:
+    jwk-set-uri: ${KEYCLOAK_BRIDGE_JWK_URI:http://localhost:8180/realms/bridge/protocol/openid-connect/certs}
+
+grpc:
+  server:
+    port: ${GRPC_PORT:9090}
+    in-process-name: wallet-grpc
+
+management:
+  server:
+    port: ${MANAGEMENT_PORT:8081}
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: refresh, bus-refresh, probes, auditevents, beans, conditions, configprops, env, flyway, health, heapdump, info, liquibase, logfile, loggers, metrics, prometheus, scheduledtasks, sessions, shutdown, threaddump
+
+external:
+  rayan-gateway:
+    base-url: ${RAYAN_BASE_URL:https://rayan-gateway.example.com}
+
+rayan:
+  auth:
+    username: ${RAYAN_USERNAME:}
+    password: ${RAYAN_PASSWORD:}
+    application-key: ${RAYAN_APP_KEY:}
+  retry:
+    max:
+      attempts: 3
+    delay: 10000
+
+wallet:
+  rayan:
+    schedule: ${RAYAN_SCHEDULE:0 30 8 * * MON-FRI}
+    backup:
+      schedule: ${RAYAN_BACKUP_SCHEDULE:0 0 9 * * MON-FRI}
+    remove:
+      schedule: ${RAYAN_REMOVE_SCHEDULE:0 0 2 * * *}
+
+credit:
+  active: ${CREDIT_ACTIVE:false}
+
+kafka:
+  topic:
+    wallet:
+      state: wallet.state.updated
+
+shedlock:
+  defaults:
+    lock-at-most-for: 55m
+    lock-at-least-for: 55m
+
+cors:
+  allowed-origins:
+    - ${CORS_ORIGIN_1:http://localhost:3000}
+  allowed-methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  allowed-headers: "*"
+  allow-credentials: true
+  max-age: 3600
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+logging:
+  level:
+    ir.ebb: INFO
+    org.springframework.security: WARN

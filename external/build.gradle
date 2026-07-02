@@ -1,0 +1,18 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':core')
+    api project(':base')
+
+    api libs.common
+    api libs.springRetry
+    api libs.httpClient
+    api libs.uuidCreator
+    api libs.fastjson2
+
+    implementation libs.springBoot
+    implementation libs.bundles.postgresBundle
+    implementation libs.web
+}

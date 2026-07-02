@@ -1,0 +1,8 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api libs.common
+    api libs.apacheCommons
+}

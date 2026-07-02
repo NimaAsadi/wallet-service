@@ -1,0 +1,56 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'com.google.protobuf'
+}
+
+dependencies {
+    implementation project(':core')
+    implementation project(':external')
+    implementation project(':base')
+    implementation project(':user-info')
+
+    implementation libs.springBoot
+    implementation libs.common
+    implementation libs.bundles.postgresBundle
+    implementation libs.configClient
+    implementation libs.busRabbit
+    implementation libs.bundles.webBundle
+    implementation libs.kafka
+    implementation libs.apacheCommons
+    implementation libs.bundles.security
+    implementation libs.bundles.shedlockBundle
+    implementation libs.actuator
+    implementation libs.dataRedis
+    implementation libs.liquibase
+    implementation libs.quartz
+    implementation libs.uuidCreator
+    implementation libs.springRetry
+    implementation libs.slerlc
+    implementation libs.bundles.pekkoBundle
+
+    // gRPC for bridge layer
+    implementation libs.bundles.grpcBundle
+
+}
+
+protobuf {
+    protoc { artifact = 'com.google.protobuf:protoc:4.33.0' }
+    plugins {
+        grpc { artifact = 'io.grpc:protoc-gen-grpc-java:1.76.0' }
+    }
+    generateProtoTasks {
+        all()*.plugins { grpc {} }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs 'build/generated/source/proto/main/grpc'
+            srcDirs 'build/generated/source/proto/main/java'
+        }
+        proto { srcDir 'src/main/proto' }
+    }
+}

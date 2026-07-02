@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':base')
+    api libs.common
+    api libs.bundles.postgresBundle
+    implementation libs.springBoot
+}

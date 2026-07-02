@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package ir.ebb.wallet.grpc;
+
+option java_package = "ir.ebb.wallet.grpc";
+option java_multiple_files = true;
+
+service WalletService {
+  rpc GetWallet (GetWalletRequest) returns (WalletResponse);
+  rpc GetBuyingPower (GetBuyingPowerRequest) returns (BuyingPowerResponse);
+}
+
+message GetWalletRequest {
+  int64 accountNumber = 1;
+}
+
+message GetBuyingPowerRequest {
+  int64 accountNumber = 1;
+  string settlementDelay = 2;
+}
+
+message WalletResponse {
+  int64 balance = 1;
+  int64 credit = 2;
+  int64 initCredit = 3;
+  int64 t0 = 4;
+  int64 t1 = 5;
+  int64 t2 = 6;
+  int64 totalFrozen = 7;
+  int64 separCredit = 8;
+  int64 separInitCredit = 9;
+}
+
+message BuyingPowerResponse {
+  int64 balance = 1;
+  int64 credit = 2;
+  int64 separCredit = 3;
+}

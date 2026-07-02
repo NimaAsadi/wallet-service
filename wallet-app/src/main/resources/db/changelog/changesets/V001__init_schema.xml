@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         user_info
+    ════════════════════════════════════════════════════════════════ -->
+    <changeSet id="1" author="wallet-service">
+        <createTable tableName="user_info">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_number" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="national_code" type="VARCHAR(20)"/>
+            <column name="full_name" type="VARCHAR(200)"/>
+            <column name="account_name" type="VARCHAR(200)"/>
+            <column name="father_name" type="VARCHAR(100)"/>
+            <column name="mobile" type="VARCHAR(20)"/>
+            <column name="email" type="VARCHAR(200)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="user_info"
+                             columnNames="user_id, account_number"
+                             constraintName="uq_user_info_user_id_account_number"/>
+
+        <createIndex tableName="user_info" indexName="idx_user_info_account_number">
+            <column name="account_number"/>
+        </createIndex>
+
+        <createIndex tableName="user_info" indexName="idx_user_info_user_id">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         wallet
+    ════════════════════════════════════════════════════════════════ -->
+    <changeSet id="2" author="wallet-service">
+        <createTable tableName="wallet">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_number" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t0_balance" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t0_frozen" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t1_balance" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t1_frozen" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t2_balance" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t2_frozen" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="credit" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="initial_credit" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="separ_credit" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="separ_initial_credit" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="wallet" columnNames="user_id"
+                             constraintName="uq_wallet_user_id"/>
+        <addUniqueConstraint tableName="wallet" columnNames="account_number"
+                             constraintName="uq_wallet_account_number"/>
+
+        <createIndex tableName="wallet" indexName="idx_wallet_account_number">
+            <column name="account_number"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         wallet_debt
+    ════════════════════════════════════════════════════════════════ -->
+    <changeSet id="3" author="wallet-service">
+        <createTable tableName="wallet_debt">
+            <column name="wallet_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"
+                             foreignKeyName="fk_wallet_debt_wallet"
+                             references="wallet(id)"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t2_to_t0_debt" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t2_to_t1_debt" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t1_to_t0_debt" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t2_to_credit_debt" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t1_to_credit_debt" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t2_to_separ_credit_debt" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="t1_to_separ_credit_debt" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         turnover
+    ════════════════════════════════════════════════════════════════ -->
+    <changeSet id="4" author="wallet-service">
+        <createTable tableName="turnover">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_number" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="wallet_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="debit" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="credit" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tracking_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="traded_quantity" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="traded_price" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="trade_number" type="INT"/>
+            <column name="isin" type="VARCHAR(20)"/>
+            <column name="issuing_company_afc_name" type="VARCHAR(200)"/>
+            <column name="instrument_afc_norm_name" type="VARCHAR(200)"/>
+            <column name="receipt_bank_number" type="VARCHAR(50)"/>
+            <column name="withdraw_rayan_id" type="BIGINT"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="turnover" indexName="idx_turnover_account_number">
+            <column name="account_number"/>
+        </createIndex>
+        <createIndex tableName="turnover" indexName="idx_turnover_user_id">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="turnover" indexName="idx_turnover_created_at">
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         credit_history
+    ════════════════════════════════════════════════════════════════ -->
+    <changeSet id="5" author="wallet-service">
+        <createTable tableName="credit_history">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_number" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_id" type="UUID"/>
+            <column name="created_by" type="VARCHAR(200)"/>
+            <column name="error_message" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="credit_history" indexName="idx_credit_history_account_number">
+            <column name="account_number"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         wallet_transaction
+    ════════════════════════════════════════════════════════════════ -->
+    <changeSet id="6" author="wallet-service">
+        <createTable tableName="wallet_transaction">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_number" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="wallet_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="wallet_operation_type" type="VARCHAR(30)"/>
+            <column name="wallet_transaction_type" type="VARCHAR(50)"/>
+            <column name="wallet_parameter_type" type="VARCHAR(10)"/>
+            <column name="amount" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tracking_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="frozen_before" type="BIGINT"/>
+            <column name="frozen_after" type="BIGINT"/>
+            <column name="balance_before" type="BIGINT"/>
+            <column name="balance_after" type="BIGINT"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="wallet_transaction" indexName="idx_wallet_transaction_account_number">
+            <column name="account_number"/>
+        </createIndex>
+        <createIndex tableName="wallet_transaction" indexName="idx_wallet_transaction_tracking_id">
+            <column name="tracking_id"/>
+        </createIndex>
+        <createIndex tableName="wallet_transaction" indexName="idx_wallet_transaction_wallet_id">
+            <column name="wallet_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         rayan_wallet
+    ════════════════════════════════════════════════════════════════ -->
+    <changeSet id="7" author="wallet-service">
+        <createTable tableName="rayan_wallet">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_number" type="BIGINT"/>
+            <column name="national_code" type="VARCHAR(20)"/>
+            <column name="customer_credit" type="BIGINT"/>
+            <column name="financial_remain" type="BIGINT"/>
+            <column name="in_progress" type="BIGINT"/>
+            <column name="bond" type="BIGINT"/>
+            <column name="loan" type="BIGINT"/>
+            <column name="sale_t0" type="BIGINT"/>
+            <column name="sale_t1" type="BIGINT"/>
+            <column name="sale_t2" type="BIGINT"/>
+            <column name="purchase_t0" type="BIGINT"/>
+            <column name="purchase_t1" type="BIGINT"/>
+            <column name="purchase_t2" type="BIGINT"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="rayan_wallet" indexName="idx_rayan_wallet_account_number">
+            <column name="account_number"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         rayan_wallet_history
+    ════════════════════════════════════════════════════════════════ -->
+    <changeSet id="8" author="wallet-service">
+        <createTable tableName="rayan_wallet_history">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_number" type="BIGINT"/>
+            <column name="national_code" type="VARCHAR(20)"/>
+            <column name="customer_credit" type="BIGINT"/>
+            <column name="financial_remain" type="BIGINT"/>
+            <column name="in_progress" type="BIGINT"/>
+            <column name="bond" type="BIGINT"/>
+            <column name="loan" type="BIGINT"/>
+            <column name="sale_t0" type="BIGINT"/>
+            <column name="sale_t1" type="BIGINT"/>
+            <column name="sale_t2" type="BIGINT"/>
+            <column name="purchase_t0" type="BIGINT"/>
+            <column name="purchase_t1" type="BIGINT"/>
+            <column name="purchase_t2" type="BIGINT"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="rayan_wallet_history" indexName="idx_rayan_wallet_history_account_number">
+            <column name="account_number"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         shedlock
+    ════════════════════════════════════════════════════════════════ -->
+    <changeSet id="9" author="wallet-service">
+        <createTable tableName="shedlock">
+            <column name="name" type="VARCHAR(64)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="lock_until" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="locked_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="locked_by" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

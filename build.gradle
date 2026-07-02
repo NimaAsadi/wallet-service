@@ -1,0 +1,53 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.7' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.google.protobuf' version '0.9.4' apply false
+}
+
+ext {
+    springCloudVersion = '2025.0.0'
+}
+
+allprojects {
+    group = 'ir.ebb'
+    version = '0.0.1'
+
+    repositories {
+        maven {
+            url "https://nexus.ebidar.net/repository/maven_ebidar/"
+        }
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    dependencies {
+        compileOnly libs.lombok
+        annotationProcessor libs.lombok
+        annotationProcessor libs.hibernate.jpamodelgen
+        testImplementation libs.bundles.testBundle
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.boot:spring-boot-dependencies:3.5.7"
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+
+    tasks.register("prepareKotlinBuildScriptModel") {}
+}
