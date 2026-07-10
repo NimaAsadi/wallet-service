@@ -1,5 +1,6 @@
 package ir.ebb.wallet.app.admin.service;
 
+import ir.ebb.base.security.UserPrincipal;
 import ir.ebb.wallet.app.admin.dto.request.CreditHistorySearchRequestDTO;
 import ir.ebb.wallet.app.admin.dto.request.WalletInitCreditRequestDTO;
 import ir.ebb.wallet.app.admin.dto.request.WalletRequestDTO;
@@ -15,9 +16,9 @@ public interface AdminWalletWebService {
 
     PaginatedResponseDTO<WalletResponseDTO> searchWallet(WalletSearchRequestDTO request);
 
-    void initCredit(WalletInitCreditRequestDTO request);
+    void initCredit(WalletInitCreditRequestDTO request, UserPrincipal principal);
 
-    void removeCredit(WalletRequestDTO request);
+    void removeCredit(WalletRequestDTO request, UserPrincipal principal);
 
     PaginatedResponseDTO<CreditHistoryResponseDTO> searchCredit(CreditHistorySearchRequestDTO request);
 

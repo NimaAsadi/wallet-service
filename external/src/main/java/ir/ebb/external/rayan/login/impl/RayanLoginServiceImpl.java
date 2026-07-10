@@ -3,35 +3,37 @@ package ir.ebb.external.rayan.login.impl;
 import ir.ebb.external.rayan.login.RayanLoginService;
 import ir.ebb.external.rayan.login.dto.request.RayanLoginRequest;
 import ir.ebb.external.rayan.login.dto.response.RayanLoginResponse;
-import ir.ebb.external.rayan.login.gateway.RayanLoginGateway;
-import lombok.RequiredArgsConstructor;
+import ir.ebb.external.rayan.configuration.RayanHttpClient;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+/**
+ * Replaces the Spring version. Holds the Rayan bearer token with a ttl-based
+ * cache. All access is synchronized so concurrent callers can't trigger
+ * overlapping logins. Credentials are constructor-injected (from config) instead
+ * of {@code @Value}.
+ */
 @Slf4j
-@Service
-@RequiredArgsConstructor
 public class RayanLoginServiceImpl implements RayanLoginService {
 
-    private final RayanLoginGateway rayanLoginGateway;
-
-    @Value("${rayan.auth.username}")
-    private String username;
-
-    @Value("${rayan.auth.password}")
-    private String password;
-
-    @Value("${rayan.auth.application-key}")
-    private String applicationKey;
+    private final RayanHttpClient rayanHttpClient;
+    private final String username;
+    private final String password;
+    private final String applicationKey;
 
     private String token;
     private LocalDateTime tokenExpireTime;
 
+    public RayanLoginServiceImpl(RayanHttpClient rayanHttpClient, String username, String password, String applicationKey) {
+        this.rayanHttpClient = rayanHttpClient;
+        this.username = username;
+        this.password = password;
+        this.applicationKey = applicationKey;
+    }
+
     @Override
-    public String getToken() {
+    public synchronized String getToken() {
         if (token == null || LocalDateTime.now().isAfter(tokenExpireTime)) {
             login();
         }
@@ -39,9 +41,9 @@ public class RayanLoginServiceImpl implements RayanLoginService {
     }
 
     @Override
-    public String login() {
+    public synchronized String login() {
         log.atInfo().log("Logging in to Rayan gateway");
-        RayanLoginResponse response = rayanLoginGateway.getToken(
+        RayanLoginResponse response = rayanHttpClient.authenticate(
                 new RayanLoginRequest(username, password, applicationKey));
         token = "Bearer " + response.accessToken();
         tokenExpireTime = LocalDateTime.now().plusSeconds(response.ttl() != null ? response.ttl() : 3600);

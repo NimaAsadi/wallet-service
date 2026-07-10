@@ -1,31 +1,35 @@
 package ir.ebb.external.rayan.wallet.repository;
 
-import ir.ebb.external.rayan.wallet.entity.RayanWalletHistoryEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
+import ir.ebb.base.jdbc.Jdbc;
+import lombok.RequiredArgsConstructor;
 
+import javax.sql.DataSource;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
-@Repository
-public interface RayanWalletHistoryRepository extends JpaRepository<RayanWalletHistoryEntity, UUID> {
+/**
+ * JDBC replacement. The two batched deletes preserve the original 10k-chunk
+ * native SQL; the caller loops until the returned count is 0.
+ */
+@RequiredArgsConstructor
+public class RayanWalletHistoryRepository {
 
-    @Modifying
-    @Transactional
-    @Query(value = "delete from rayan_wallet_history where id in " +
-            "(SELECT id FROM rayan_wallet_history WHERE created_at < :date LIMIT 10000);",
-            nativeQuery = true)
-    long deleteByCreatedAtBefore(@Param("date") LocalDateTime localDateTime);
+    private static final String DELETE_BEFORE = """
+            DELETE FROM rayan_wallet_history WHERE id IN
+            (SELECT id FROM rayan_wallet_history WHERE created_at < ? LIMIT 10000)
+            """;
 
-    @Modifying
-    @Transactional
-    @Query(value = "delete from rayan_wallet_history where id in " +
-            "(SELECT id FROM rayan_wallet_history WHERE created_at >= :startDate AND created_at < :endDate LIMIT 10000);",
-            nativeQuery = true)
-    long deleteAllByCreatedAtBetween(@Param("startDate") LocalDateTime startDate,
-                                     @Param("endDate") LocalDateTime endDate);
+    private static final String DELETE_BETWEEN = """
+            DELETE FROM rayan_wallet_history WHERE id IN
+            (SELECT id FROM rayan_wallet_history WHERE created_at >= ? AND created_at < ? LIMIT 10000)
+            """;
+
+    private final DataSource dataSource;
+
+    public long deleteByCreatedAtBefore(LocalDateTime date) {
+        return Jdbc.withConn(dataSource, conn -> Jdbc.update(conn, DELETE_BEFORE, date));
+    }
+
+    public long deleteAllByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+        return Jdbc.withConn(dataSource, conn -> Jdbc.update(conn, DELETE_BETWEEN, startDate, endDate));
+    }
 }

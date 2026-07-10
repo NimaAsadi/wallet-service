@@ -1,53 +1,19 @@
 plugins {
     id 'java-library'
-    id 'com.google.protobuf'
 }
-
 
 dependencies {
     api project(':base')
+    api project(':user-info')
 
     api libs.bundles.pekkoBundle
-    api libs.common
-    api libs.slerlc
     api libs.apacheCommons
     api libs.uuidCreator
 
-    api libs.bundles.postgresBundle
-    api libs.kafka
+    api libs.postgres
+    api libs.hikari
+    api libs.liquibase
+    api libs.kafkaClients
 
-    implementation libs.springBoot
-    implementation libs.validation
-    implementation libs.actuator
-    implementation libs.configClient
-    implementation libs.busRabbit
-    implementation libs.liquibase
-    implementation libs.bundles.shedlockBundle
-    implementation libs.springRetry
     implementation libs.protobuf
-}
-
-protobuf {
-    protoc {
-        artifact = 'com.google.protobuf:protoc:4.33.0'
-    }
-    plugins {
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.76.0'
-        }
-    }
-    generateProtoTasks {
-        all()*.plugins {
-            grpc {}
-        }
-    }
-}
-
-sourceSets {
-    main {
-        java {
-            srcDirs 'build/generated/source/proto/main/grpc'
-            srcDirs 'build/generated/source/proto/main/java'
-        }
-    }
 }

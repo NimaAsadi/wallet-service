@@ -1,17 +1,14 @@
 package ir.ebb.wallet.app.admin.service.job;
 
 import ir.ebb.common.constant.enumeration.SettlementDelay;
+import ir.ebb.wallet.app.infra.KafkaWalletProducer;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import ir.ebb.wallet.entity.TurnoverEntity;
 import ir.ebb.wallet.service.query.WalletQueryService;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Service;
 
 import java.text.NumberFormat;
 import java.util.HashMap;
@@ -20,20 +17,26 @@ import java.util.Locale;
 import java.util.Map;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
 public class TurnoverNotifyWebServiceImpl implements TurnoverNotifyWebService {
 
     private static final int BATCH_SIZE = 100;
 
-    @Value("${kafka.topic.turnover.notification:wallet.turnover.notification}")
-    private String turnoverNotificationTopic;
-
     private final TurnoverQueryService turnoverQueryService;
     private final WalletQueryService walletQueryService;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaWalletProducer kafkaWalletProducer;
+    private final String turnoverNotificationTopic;
 
     private final NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
+
+    public TurnoverNotifyWebServiceImpl(TurnoverQueryService turnoverQueryService,
+                                        WalletQueryService walletQueryService,
+                                        KafkaWalletProducer kafkaWalletProducer,
+                                        String turnoverNotificationTopic) {
+        this.turnoverQueryService = turnoverQueryService;
+        this.walletQueryService = walletQueryService;
+        this.kafkaWalletProducer = kafkaWalletProducer;
+        this.turnoverNotificationTopic = turnoverNotificationTopic;
+    }
 
     @Override
     public void aggregateUserTurnover() {
@@ -58,7 +61,7 @@ public class TurnoverNotifyWebServiceImpl implements TurnoverNotifyWebService {
                 Map<String, Object> notification = new HashMap<>();
                 notification.put("accountNumber", accountNumber);
                 notification.put("message", message);
-                kafkaTemplate.send(turnoverNotificationTopic, accountNumber.toString(), notification);
+                kafkaWalletProducer.send(turnoverNotificationTopic, accountNumber.toString(), notification);
             } catch (Exception e) {
                 log.atWarn().log("Failed to send turnover notification for accountNumber={}: {}",
                         accountNumber, e.getMessage());

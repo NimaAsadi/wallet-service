@@ -14,9 +14,6 @@ import ir.ebb.wallet.service.turnover.command.TurnoverCommandService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,7 +22,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class RayanWalletJobServiceImpl implements RayanWalletJobService {
 
@@ -36,7 +32,6 @@ public class RayanWalletJobServiceImpl implements RayanWalletJobService {
     private final TurnoverCommandService turnoverCommandService;
 
     @Override
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void updateFromRayan(Map<Long, RayanWalletDTO> allRayanWallets) throws ApplicationException {
         rayanWalletCommandService.deleteAll();
         rayanWalletCommandService.saveAll(allRayanWallets.values());
@@ -45,7 +40,6 @@ public class RayanWalletJobServiceImpl implements RayanWalletJobService {
     }
 
     @Override
-    @Transactional
     public void syncWallets(Map<Long, RayanWalletDTO> allRayanWallets) {
         List<Wallet> wallets = walletQueryService.findAll().parallelStream()
                 .map(entity -> {

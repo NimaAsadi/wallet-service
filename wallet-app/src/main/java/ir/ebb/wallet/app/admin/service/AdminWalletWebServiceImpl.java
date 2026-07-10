@@ -1,10 +1,12 @@
 package ir.ebb.wallet.app.admin.service;
 
 import ir.ebb.base.exception.ExceptionConstants;
+import ir.ebb.base.security.UserPrincipal;
+import ir.ebb.common.dto.request.PageRequest;
+import ir.ebb.common.dto.response.Page;
 import ir.ebb.common.dto.response.PaginatedResponseDTO;
 import ir.ebb.common.exception.handler.BusinessException;
 import ir.ebb.common.model.user.User;
-import ir.ebb.common.utility.SecurityUtil;
 import ir.ebb.external.rayan.wallet.dto.RayanInitCreditResponseDTO;
 import ir.ebb.external.rayan.wallet.dto.RayanWalletDTO;
 import ir.ebb.external.rayan.wallet.service.command.RayanWalletCommandService;
@@ -30,22 +32,11 @@ import ir.ebb.wallet.service.command.WalletCommandService;
 import ir.ebb.wallet.service.credit.query.CreditHistoryQueryService;
 import ir.ebb.wallet.service.query.WalletQueryService;
 import ir.ebb.wallet.service.turnover.command.TurnoverCommandService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
-@Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class AdminWalletWebServiceImpl implements AdminWalletWebService {
 
     private final WalletCommandService walletCommandService;
@@ -55,9 +46,25 @@ public class AdminWalletWebServiceImpl implements AdminWalletWebService {
     private final CreditHistoryQueryService creditHistoryQueryService;
     private final UserQueryService userQueryService;
     private final TurnoverCommandService turnoverCommandService;
+    private final boolean activeCredit;
 
-    @Value("${credit.active:false}")
-    private boolean activeCredit;
+    public AdminWalletWebServiceImpl(WalletCommandService walletCommandService,
+                                     WalletQueryService walletQueryService,
+                                     RayanWalletQueryService rayanWalletQueryService,
+                                     RayanWalletCommandService rayanWalletCommandService,
+                                     CreditHistoryQueryService creditHistoryQueryService,
+                                     UserQueryService userQueryService,
+                                     TurnoverCommandService turnoverCommandService,
+                                     boolean activeCredit) {
+        this.walletCommandService = walletCommandService;
+        this.walletQueryService = walletQueryService;
+        this.rayanWalletQueryService = rayanWalletQueryService;
+        this.rayanWalletCommandService = rayanWalletCommandService;
+        this.creditHistoryQueryService = creditHistoryQueryService;
+        this.userQueryService = userQueryService;
+        this.turnoverCommandService = turnoverCommandService;
+        this.activeCredit = activeCredit;
+    }
 
     @Override
     public void create(String userId, Long dbsAccountNumber) {
@@ -79,19 +86,19 @@ public class AdminWalletWebServiceImpl implements AdminWalletWebService {
 
     @Override
     public PaginatedResponseDTO<WalletResponseDTO> searchWallet(WalletSearchRequestDTO request) {
-        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getSize(), Sort.by(request.getOrderBy()));
+        PageRequest pageRequest = request.toPageRequest();
         Page<WalletEntity> page = walletQueryService.findAll(WalletTransformer.adapt(request), pageRequest);
         return new PaginatedResponseDTO<>(page, WalletTransformer::adapt);
     }
 
     @Override
-    public void initCredit(WalletInitCreditRequestDTO request) {
+    public void initCredit(WalletInitCreditRequestDTO request, UserPrincipal principal) {
         if (!activeCredit) {
             throw new BusinessException(ExceptionConstants.NOT_ACCEPTABLE.getMessage(),
                     ExceptionConstants.NOT_ACCEPTABLE.getCode());
         }
-        UUID adminId = SecurityUtil.getAdminAuthDetail().getKeycloakId();
-        String adminFullName = SecurityUtil.getAdminAuthDetail().getName();
+        UUID adminId = principal.keycloakId();
+        String adminFullName = principal.name();
         Wallet wallet = walletQueryService.getWallet(request.walletRequestDTO().dbsAccountNumber());
         UserEntity userEntity = userQueryService.getByUser(wallet.getUser());
         CreditHistoryEntity creditHistory = new CreditHistoryEntity(userEntity, request.credit(),
@@ -105,13 +112,13 @@ public class AdminWalletWebServiceImpl implements AdminWalletWebService {
     }
 
     @Override
-    public void removeCredit(WalletRequestDTO request) {
+    public void removeCredit(WalletRequestDTO request, UserPrincipal principal) {
         if (!activeCredit) {
             throw new BusinessException(ExceptionConstants.NOT_ACCEPTABLE.getMessage(),
                     ExceptionConstants.NOT_ACCEPTABLE.getCode());
         }
-        UUID adminId = SecurityUtil.getAdminAuthDetail().getKeycloakId();
-        String adminFullName = SecurityUtil.getAdminAuthDetail().getName();
+        UUID adminId = principal.keycloakId();
+        String adminFullName = principal.name();
         Wallet wallet = walletQueryService.getWallet(request.dbsAccountNumber());
         UserEntity userEntity = userQueryService.getByUser(wallet.getUser());
         CreditHistoryEntity creditHistory = new CreditHistoryEntity(userEntity, 0L,
@@ -125,7 +132,7 @@ public class AdminWalletWebServiceImpl implements AdminWalletWebService {
 
     @Override
     public PaginatedResponseDTO<CreditHistoryResponseDTO> searchCredit(CreditHistorySearchRequestDTO request) {
-        PageRequest pageRequest = PageRequest.of(request.getPage(), request.getSize(), Sort.by(request.getOrderBy()));
+        PageRequest pageRequest = request.toPageRequest();
         Page<CreditHistoryEntity> page = creditHistoryQueryService.findAll(
                 CreditHistoryTransformer.adapt(request), pageRequest);
         return new PaginatedResponseDTO<>(page, CreditHistoryTransformer::adapt);

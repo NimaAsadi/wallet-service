@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
-    api libs.common
     api libs.apacheCommons
+    api libs.uuidCreator
+    api libs.bundles.jacksonBundle
 }

@@ -2,6 +2,7 @@ pluginManagement {
     repositories {
         maven { url "https://nexus.ebidar.net/repository/maven_ebidar/" }
         gradlePluginPortal()
+        mavenCentral()
     }
 }
 rootProject.name = 'wallet-service'
@@ -21,69 +22,58 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         libs {
-            library('springBoot', 'org.springframework.boot', 'spring-boot-starter').withoutVersion()
-            library('actuator', 'org.springframework.boot', 'spring-boot-starter-actuator').withoutVersion()
-            library('configClient', 'org.springframework.cloud', 'spring-cloud-starter-config').withoutVersion()
-            library('dataRedis', 'org.springframework.boot', 'spring-boot-starter-data-redis').withoutVersion()
-            library('validation', 'org.springframework.boot', 'spring-boot-starter-validation').withoutVersion()
-            library('busRabbit', 'org.springframework.cloud', 'spring-cloud-starter-bus-amqp').withoutVersion()
+            // ── Pekko (actor model, HTTP, streams) ────────────────────────────────
+            version('pekko', '1.6.0')
+            version('pekkoHttp', '1.3.0')
+            library('pekko', 'org.apache.pekko', 'pekko-actor-typed_3').versionRef('pekko')
+            library('pekkoSlf4j', 'org.apache.pekko', 'pekko-slf4j_3').versionRef('pekko')
+            library('pekkoStream', 'org.apache.pekko', 'pekko-stream_3').versionRef('pekko')
+            library('pekkoHttpCore', 'org.apache.pekko', 'pekko-http-core_3').versionRef('pekkoHttp')
+            library('pekkoHttp', 'org.apache.pekko', 'pekko-http_3').versionRef('pekkoHttp')
+            library('pekkoHttpJackson', 'org.apache.pekko', 'pekko-http-jackson_3').versionRef('pekkoHttp')
+            bundle('pekkoBundle', ['pekko', 'pekkoSlf4j', 'pekkoStream'])
+            bundle('httpBundle', ['pekkoHttpCore', 'pekkoHttp', 'pekkoHttpJackson'])
 
-            library('lombok', 'org.projectlombok', 'lombok').withoutVersion()
+            // ── Persistence (plain JDBC, no JPA) ──────────────────────────────────
+            library('postgres', 'org.postgresql', 'postgresql').version('42.7.4')
+            library('hikari', 'com.zaxxer', 'HikariCP').version('5.1.0')
+            library('liquibase', 'org.liquibase', 'liquibase-core').version('4.27.0')
 
-            library('common', 'ir.ebb:common:0.0.167')
-            library('slerlc', 'ir.ebb.oms:slerlc:3.4.4')
-            library('hibernate-jpamodelgen', 'org.hibernate.orm:hibernate-jpamodelgen:6.5.2.Final')
-            library('fastjson2', 'com.alibaba.fastjson2:fastjson2:2.0.59')
+            // ── gRPC (plain grpc-java, no spring starter) ─────────────────────────
+            version('grpc', '1.76.0')
+            library('grpcNetty', 'io.grpc', 'grpc-netty-shaded').versionRef('grpc')
+            library('grpcStub', 'io.grpc', 'grpc-stub').versionRef('grpc')
+            library('grpcProtobuf', 'io.grpc', 'grpc-protobuf').versionRef('grpc')
+            bundle('grpcBundle', ['grpcNetty', 'grpcStub', 'grpcProtobuf'])
 
-            library('kafka', 'org.springframework.kafka', 'spring-kafka').version('3.3.10')
+            // ── JSON / JWT / validation / logging / utils ─────────────────────────
+            version('jackson', '2.17.2')
+            library('jacksonDatabind', 'com.fasterxml.jackson.core', 'jackson-databind').versionRef('jackson')
+            library('jacksonJsr310', 'com.fasterxml.jackson.datatype', 'jackson-datatype-jsr310').versionRef('jackson')
+            bundle('jacksonBundle', ['jacksonDatabind', 'jacksonJsr310'])
 
-            library('dataJpa', 'org.springframework.boot', 'spring-boot-starter-data-jpa').withoutVersion()
-            library('postgres', 'org.postgresql', 'postgresql').withoutVersion()
-            bundle('postgresBundle', ['dataJpa', 'postgres'])
+            library('nimbusJwt', 'com.nimbusds', 'nimbus-jose-jwt').version('9.40')
+            library('cronUtils', 'com.cronutils', 'cron-utils').version('9.2.1')
+            library('logback', 'ch.qos.logback', 'logback-classic').version('1.5.6')
+            library('kafkaClients', 'org.apache.kafka', 'kafka-clients').version('3.8.1')
 
-            library('test', 'org.springframework.boot', 'spring-boot-starter-test').withoutVersion()
-            library('testContainers', 'org.springframework.boot', 'spring-boot-testcontainers').withoutVersion()
-            library('jupiter', 'org.testcontainers', 'junit-jupiter').withoutVersion()
-            library('junitLauncher', 'org.junit.platform', 'junit-platform-launcher').withoutVersion()
-            library('junit-params', 'org.junit.jupiter', 'junit-jupiter-params').withoutVersion()
-            library('testContainersPostgresql', 'org.testcontainers', 'postgresql').withoutVersion()
-            library('assertj', 'org.assertj:assertj-core:3.25.1')
-            bundle('testBundle', ['test','jupiter','junitLauncher','testContainers',
-                                  'junit-params','testContainersPostgresql','assertj'])
-
-            library('web', 'org.springframework.boot', 'spring-boot-starter-web').withoutVersion()
-            library('swagger', 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14')
-            bundle('webBundle', ['web', 'swagger'])
-
-            library('shedlockSpring', 'net.javacrumbs.shedlock', 'shedlock-spring').version('5.13.0')
-            library('shedlockJdbcProvider', 'net.javacrumbs.shedlock', 'shedlock-provider-jdbc-template').version('5.13.0')
-            bundle('shedlockBundle', ['shedlockSpring', 'shedlockJdbcProvider'])
-
-            library('pekko', 'org.apache.pekko', 'pekko-actor-typed_3').version('1.6.0')
-            library('pekkoSlf4j', 'org.apache.pekko', 'pekko-slf4j_3').version('1.6.0')
-            bundle('pekkoBundle', ['pekko', 'pekkoSlf4j'])
-
-            library('springRetry', 'org.springframework.retry', 'spring-retry').version('2.0.5')
-            library('apacheCommons', 'org.apache.commons:commons-lang3:3.19.0')
-
-            library('oauthResourceServer', 'org.springframework.boot', 'spring-boot-starter-oauth2-resource-server').withoutVersion()
-            library('springSecurity', 'org.springframework.boot', 'spring-boot-starter-security').withoutVersion()
-            bundle('security', ['oauthResourceServer', 'springSecurity'])
-
-            library('grpcNetty',      'io.grpc', 'grpc-netty-shaded').version('1.76.0')
-            library('grpcStub',       'io.grpc', 'grpc-stub').version('1.76.0')
-            library('grpcProtobuf',   'io.grpc', 'grpc-protobuf').version('1.76.0')
-            library('grpcSpringBoot', 'net.devh:grpc-spring-boot-starter:3.1.0.RELEASE')
-            bundle('grpcBundle', ['grpcNetty', 'grpcStub', 'grpcProtobuf', 'grpcSpringBoot'])
-
-            library('quartz', 'org.springframework.boot', 'spring-boot-starter-quartz').withoutVersion()
+            library('lombok', 'org.projectlombok', 'lombok').version('1.18.38')
+            library('apacheCommons', 'org.apache.commons', 'commons-lang3').version('3.19.0')
             library('uuidCreator', 'com.github.f4b6a3', 'uuid-creator').version('6.0.0')
-            library('liquibase', 'org.liquibase', 'liquibase-core').withoutVersion()
-
             library('protobuf', 'com.google.protobuf', 'protobuf-java').version('4.33.0')
 
-            library('httpClient', 'org.apache.httpcomponents.client5', 'httpclient5').withoutVersion()
-
+            // ── Test ───────────────────────────────────────────────────────────────
+            version('junit', '5.10.3')
+            library('junitJupiter', 'org.junit.jupiter', 'junit-jupiter').versionRef('junit')
+            library('junitParams', 'org.junit.jupiter', 'junit-jupiter-params').versionRef('junit')
+            library('junitLauncher', 'org.junit.platform', 'junit-platform-launcher').version('1.10.3')
+            library('assertj', 'org.assertj', 'assertj-core').version('3.25.1')
+            version('testcontainers', '1.20.1')
+            library('testcontainers', 'org.testcontainers', 'testcontainers').versionRef('testcontainers')
+            library('testcontainersPostgresql', 'org.testcontainers', 'postgresql').versionRef('testcontainers')
+            library('testcontainersJunit', 'org.testcontainers', 'junit-jupiter').versionRef('testcontainers')
+            bundle('testBundle', ['junitJupiter', 'junitParams', 'junitLauncher', 'assertj',
+                                  'testcontainers', 'testcontainersPostgresql', 'testcontainersJunit'])
         }
     }
 }

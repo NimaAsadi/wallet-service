@@ -17,7 +17,7 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 import org.apache.pekko.actor.typed.javadsl.TimerScheduler;
-import org.springframework.dao.OptimisticLockingFailureException;
+import ir.ebb.base.exception.OptimisticLockingFailureException;
 
 import java.time.Duration;
 

@@ -1,6 +1,8 @@
 package ir.ebb.wallet.actor;
 
 import ir.ebb.base.exception.ExceptionConstants;
+import ir.ebb.base.exception.OptimisticLockingFailureException;
+import ir.ebb.base.jdbc.JdbcException;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.ApplicationException;
 import ir.ebb.common.exception.handler.BusinessException;
@@ -17,8 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.ActorSystem;
 import org.apache.pekko.actor.typed.javadsl.AskPattern;
-import org.springframework.dao.DataAccessException;
-import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -45,7 +45,6 @@ import java.util.function.Function;
  * the version mismatch and reload automatically.
  */
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class WalletActorService {
 
@@ -138,8 +137,8 @@ public class WalletActorService {
             walletCommandService.spendAndTransfer(trackingId, fromUser, toUser, amount, settlementDelay, type);
         } catch (ApplicationException e) {
             throw new BusinessException(e.getMessage(), 4005);
-        } catch (DataAccessException e) {
-            // OptimisticLockingFailureException and other DB errors from the direct-TX path
+        } catch (OptimisticLockingFailureException | JdbcException e) {
+            // Optimistic-lock conflict and other DB errors from the direct-TX path
             throw new BusinessException(e.getMessage(), ExceptionConstants.INTERNAL_SERVER_ERROR.getCode());
         }
     }

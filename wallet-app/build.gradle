@@ -1,7 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot'
-    id 'io.spring.dependency-management'
+    id 'application'
     id 'com.google.protobuf'
 }
 
@@ -11,28 +10,23 @@ dependencies {
     implementation project(':base')
     implementation project(':user-info')
 
-    implementation libs.springBoot
-    implementation libs.common
-    implementation libs.bundles.postgresBundle
-    implementation libs.configClient
-    implementation libs.busRabbit
-    implementation libs.bundles.webBundle
-    implementation libs.kafka
-    implementation libs.apacheCommons
-    implementation libs.bundles.security
-    implementation libs.bundles.shedlockBundle
-    implementation libs.actuator
-    implementation libs.dataRedis
-    implementation libs.liquibase
-    implementation libs.quartz
-    implementation libs.uuidCreator
-    implementation libs.springRetry
-    implementation libs.slerlc
     implementation libs.bundles.pekkoBundle
-
-    // gRPC for bridge layer
+    implementation libs.bundles.httpBundle
     implementation libs.bundles.grpcBundle
+    implementation libs.bundles.jacksonBundle
 
+    implementation libs.nimbusJwt
+    implementation libs.cronUtils
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+    implementation libs.kafkaClients
+    implementation libs.logback
+    implementation libs.uuidCreator
+    implementation libs.apacheCommons
+    implementation libs.protobuf
+}
+
+application {
+    mainClass = 'ir.ebb.wallet.app.Main'
 }
 
 protobuf {
@@ -53,4 +47,9 @@ sourceSets {
         }
         proto { srcDir 'src/main/proto' }
     }
+}
+
+// The protobuf plugin and resources both surface .proto files → dedupe.
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

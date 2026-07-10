@@ -1,10 +1,11 @@
 package ir.ebb.wallet.app.admin.dto.request;
 
+import ir.ebb.common.dto.request.Direction;
 import ir.ebb.common.dto.request.PaginatedRequestDTO;
 import ir.ebb.wallet.constant.enumeration.RayanCreditStatus;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.domain.Sort;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class CreditHistorySearchRequestDTO extends PaginatedRequestDTO {
 
     private Set<UUID> userIds;
@@ -29,8 +31,11 @@ public class CreditHistorySearchRequestDTO extends PaginatedRequestDTO {
                                           Long fromDate, Long toDate,
                                           Long fromAmount, Long toAmount,
                                           RayanCreditStatus status, String createdBy,
-                                          String orderByProperty, Sort.Direction orderByDirection) {
-        super(page, size, orderByProperty, orderByDirection);
+                                          String orderByProperty, Direction orderByDirection) {
+        setPage(page);
+        setSize(size);
+        setOrderByProperty(orderByProperty);
+        setOrderByDirection(orderByDirection);
         this.userIds = userIds;
         this.fromDate = toLocalDate(fromDate);
         this.toDate = toLocalDate(toDate);

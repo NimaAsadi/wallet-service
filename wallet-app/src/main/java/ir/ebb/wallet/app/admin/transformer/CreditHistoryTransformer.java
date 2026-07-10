@@ -19,8 +19,7 @@ public final class CreditHistoryTransformer {
                 req.getFromAmount(),
                 req.getToAmount(),
                 req.getStatus(),
-                req.getCreatedBy(),
-                req.getOrderBy());
+                req.getCreatedBy());
     }
 
     public static CreditHistoryResponseDTO adapt(CreditHistoryEntity e) {

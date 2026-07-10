@@ -4,7 +4,6 @@ import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.ApplicationException;
 import ir.ebb.common.model.user.User;
-import ir.ebb.oms.slerlc.sle.field.ValidityType;
 import ir.ebb.wallet.constant.enumeration.WalletOperationType;
 import ir.ebb.wallet.constant.enumeration.WalletParameterType;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
@@ -116,14 +115,6 @@ public class Wallet {
         BuyingPower bp = buyingPower(settlementDelay);
         if (bp.balance() < currentValue) {
             throw new ApplicationException(ExceptionConstants.INSUFFICIENT_BALANCE.getMessage());
-        }
-    }
-
-    public void checkBuyingPowerForBuyOrder(SettlementDelay settlementDelay, Long currentValue, ValidityType validity) throws ApplicationException {
-        boolean canSpendSeparCredit = validity.equals(ValidityType.DAY) || validity.equals(ValidityType.FILL_AND_KILL);
-        BuyingPower bp = buyingPower(settlementDelay);
-        if (bp.sum(canSpendSeparCredit) < currentValue) {
-            throw new ApplicationException(ExceptionConstants.ORDER_VALUE_EXCEEDED_BALANCE.getMessage());
         }
     }
 

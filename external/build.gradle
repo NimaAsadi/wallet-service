@@ -6,13 +6,10 @@ dependencies {
     api project(':core')
     api project(':base')
 
-    api libs.common
-    api libs.springRetry
-    api libs.httpClient
+    api libs.apacheCommons
     api libs.uuidCreator
-    api libs.fastjson2
+    api libs.bundles.httpBundle
 
-    implementation libs.springBoot
-    implementation libs.bundles.postgresBundle
-    implementation libs.web
+    implementation libs.bundles.jacksonBundle
+    implementation libs.postgres
 }

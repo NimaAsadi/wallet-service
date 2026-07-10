@@ -1,15 +1,17 @@
 package ir.ebb.wallet.app.admin.dto.request;
 
+import ir.ebb.common.dto.request.Direction;
 import ir.ebb.common.dto.request.PaginatedRequestDTO;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.domain.Sort;
 
 import java.util.UUID;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class WalletTransactionSearchRequestDTO extends PaginatedRequestDTO {
 
     private String userId;
@@ -20,8 +22,11 @@ public class WalletTransactionSearchRequestDTO extends PaginatedRequestDTO {
     public WalletTransactionSearchRequestDTO(Integer page, Integer size,
                                               String userId, Long accountNumber,
                                               WalletTransactionType type, UUID trackingCode,
-                                              String orderByProperty, Sort.Direction orderByDirection) {
-        super(page, size, orderByProperty, orderByDirection);
+                                              String orderByProperty, Direction orderByDirection) {
+        setPage(page);
+        setSize(size);
+        setOrderByProperty(orderByProperty);
+        setOrderByDirection(orderByDirection);
         this.userId = userId;
         this.accountNumber = accountNumber;
         this.type = type;

@@ -2,38 +2,29 @@ package ir.ebb.wallet.entity;
 
 import ir.ebb.common.model.base.BaseEntity;
 import ir.ebb.wallet.aggregate.WalletDebt;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.util.UUID;
 
 @Data
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "wallet_debt")
 @EqualsAndHashCode(callSuper = true)
 public class WalletDebtEntity extends BaseEntity {
 
-    @Id
-    @Column(name = "wallet_id")
     private UUID id;
 
-    @ColumnDefault("0") @Column(nullable = false, name = "t2_to_t0_debt")     private Long t2Tot0Debt = 0L;
-    @ColumnDefault("0") @Column(nullable = false, name = "t2_to_t1_debt")     private Long t2Tot1Debt = 0L;
-    @ColumnDefault("0") @Column(nullable = false, name = "t1_to_t0_debt")     private Long t1Tot0Debt = 0L;
-    @ColumnDefault("0") @Column(nullable = false, name = "t2_to_credit_debt") private Long t2ToCreditDebt = 0L;
-    @ColumnDefault("0") @Column(nullable = false, name = "t1_to_credit_debt") private Long t1ToCreditDebt = 0L;
-    @ColumnDefault("0") @Column(nullable = false, name = "t2_to_separ_credit_debt") private Long t2ToSeparCreditDebt = 0L;
-    @ColumnDefault("0") @Column(nullable = false, name = "t1_to_separ_credit_debt") private Long t1ToSeparCreditDebt = 0L;
+    private Long t2Tot0Debt = 0L;
+    private Long t2Tot1Debt = 0L;
+    private Long t1Tot0Debt = 0L;
+    private Long t2ToCreditDebt = 0L;
+    private Long t1ToCreditDebt = 0L;
+    private Long t2ToSeparCreditDebt = 0L;
+    private Long t1ToSeparCreditDebt = 0L;
 
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "wallet_id")
     private WalletEntity wallet;
 
     public WalletDebt adaptToDomain() {

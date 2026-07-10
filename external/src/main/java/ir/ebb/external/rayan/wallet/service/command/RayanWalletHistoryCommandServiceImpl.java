@@ -7,9 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.core.BaseConnection;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
 import java.io.*;
@@ -22,7 +19,6 @@ import java.util.Date;
 import java.util.UUID;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class RayanWalletHistoryCommandServiceImpl implements RayanWalletHistoryCommandService {
 
@@ -30,7 +26,6 @@ public class RayanWalletHistoryCommandServiceImpl implements RayanWalletHistoryC
     private final DataSource dataSource;
 
     @Override
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void saveAll(Collection<RayanWalletDTO> rayanWalletDTOS) {
         log.atInfo().log("start save all of rayan wallets history in DB");
         try (Connection connection = dataSource.getConnection()) {
@@ -44,8 +39,8 @@ public class RayanWalletHistoryCommandServiceImpl implements RayanWalletHistoryC
                         account_number, national_code,
                         customer_credit, financial_remain, in_progress,
                         bond, loan,
-                        salet0, salet1, salet2,
-                        purchaset0, purchaset1, purchaset2
+                        sale_t0, sale_t1, sale_t2,
+                        purchase_t0, purchase_t1, purchase_t2
                     ) FROM STDIN WITH (FORMAT csv)
                     """;
 
@@ -53,7 +48,7 @@ public class RayanWalletHistoryCommandServiceImpl implements RayanWalletHistoryC
             connection.commit();
             log.atInfo().log("end save all of rayan wallets history in DB");
         } catch (SQLException | IOException e) {
-            log.atError().log("error on save rayan wallets history in DB");
+            log.atError().log("error on save rayan wallets history in DB", e);
         }
     }
 

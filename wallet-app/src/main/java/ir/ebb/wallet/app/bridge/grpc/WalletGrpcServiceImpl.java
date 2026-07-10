@@ -12,10 +12,8 @@ import ir.ebb.wallet.service.query.WalletQueryService;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.devh.boot.grpc.server.service.GrpcService;
 
 @Slf4j
-@GrpcService
 @RequiredArgsConstructor
 public class WalletGrpcServiceImpl extends WalletServiceGrpc.WalletServiceImplBase {
 

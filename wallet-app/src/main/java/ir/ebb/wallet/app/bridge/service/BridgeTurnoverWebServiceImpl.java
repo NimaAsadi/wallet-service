@@ -1,5 +1,6 @@
 package ir.ebb.wallet.app.bridge.service;
 
+import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.PaginatedResponseDTO;
 import ir.ebb.wallet.app.bridge.dto.request.BridgeTurnoverSearchRequestDTO;
 import ir.ebb.wallet.app.bridge.dto.response.BridgeTurnoverResponseDTO;
@@ -9,19 +10,12 @@ import ir.ebb.wallet.entity.WalletEntity;
 import ir.ebb.wallet.service.query.WalletQueryService;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Service
 @RequiredArgsConstructor
-@Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class BridgeTurnoverWebServiceImpl implements BridgeTurnoverWebService {
 
     private final TurnoverQueryService turnoverQueryService;
@@ -50,8 +44,7 @@ public class BridgeTurnoverWebServiceImpl implements BridgeTurnoverWebService {
                 .toCreatedAt(to)
                 .build();
 
-        PageRequest pageRequest = PageRequest.of(
-                request.getPage(), request.getSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
+        PageRequest pageRequest = request.toPageRequest();
 
         return new PaginatedResponseDTO<>(
                 turnoverQueryService.search(spec, pageRequest),

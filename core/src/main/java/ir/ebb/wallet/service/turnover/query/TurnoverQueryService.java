@@ -1,10 +1,10 @@
 package ir.ebb.wallet.service.turnover.query;
 
+import ir.ebb.common.dto.request.PageRequest;
+import ir.ebb.common.dto.response.Page;
 import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.dto.TurnoverSpecificationDTO;
 import ir.ebb.wallet.entity.TurnoverEntity;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 

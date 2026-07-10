@@ -6,15 +6,11 @@ import ir.ebb.wallet.entity.TurnoverEntity;
 import ir.ebb.wallet.entity.WalletEntity;
 import ir.ebb.wallet.repository.turnover.TurnoverRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
-@Service
 @RequiredArgsConstructor
-@Transactional
 public class TurnoverCommandServiceImpl implements TurnoverCommandService {
 
     private final TurnoverRepository turnoverRepository;
@@ -67,7 +63,7 @@ public class TurnoverCommandServiceImpl implements TurnoverCommandService {
                         walletEntity.getId(),
                         TurnoverOperationType.REMAINING,
                         remaining,
-                        java.util.UUID.randomUUID()
+                        UUID.randomUUID()
                 )
         );
     }

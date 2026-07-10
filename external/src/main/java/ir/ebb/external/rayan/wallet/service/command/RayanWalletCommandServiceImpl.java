@@ -3,23 +3,16 @@ package ir.ebb.external.rayan.wallet.service.command;
 import com.github.f4b6a3.uuid.UuidCreator;
 import ir.ebb.base.constant.ApplicationConstants;
 import ir.ebb.common.exception.handler.ApplicationException;
-import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.external.rayan.configuration.RayanConfig;
+import ir.ebb.external.rayan.configuration.RayanHttpClient;
+import ir.ebb.external.rayan.configuration.RayanHttpException;
 import ir.ebb.external.rayan.login.RayanLoginService;
 import ir.ebb.external.rayan.wallet.dto.RayanInitCreditResponseDTO;
 import ir.ebb.external.rayan.wallet.dto.RayanWalletDTO;
-import ir.ebb.external.rayan.wallet.gateway.RayanWalletGateway;
 import ir.ebb.external.rayan.wallet.repository.RayanWalletRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.core.BaseConnection;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpClientErrorException;
 
 import javax.sql.DataSource;
 import java.io.*;
@@ -30,12 +23,11 @@ import java.util.Collection;
 import java.util.UUID;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class RayanWalletCommandServiceImpl implements RayanWalletCommandService {
 
     private final RayanLoginService rayanLoginService;
-    private final RayanWalletGateway rayanWalletGateway;
+    private final RayanHttpClient rayanHttpClient;
     private final RayanWalletRepository rayanWalletRepository;
     private final DataSource dataSource;
 
@@ -47,7 +39,6 @@ public class RayanWalletCommandServiceImpl implements RayanWalletCommandService 
     }
 
     @Override
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void saveAll(Collection<RayanWalletDTO> rayanWalletDTOS) throws ApplicationException {
         log.atInfo().log("start save all of rayan wallets in DB");
         try (Connection connection = dataSource.getConnection()) {
@@ -61,8 +52,8 @@ public class RayanWalletCommandServiceImpl implements RayanWalletCommandService 
                         account_number, national_code,
                         customer_credit, financial_remain, in_progress,
                         bond, loan,
-                        salet0, salet1, salet2,
-                        purchaset0, purchaset1, purchaset2
+                        sale_t0, sale_t1, sale_t2,
+                        purchase_t0, purchase_t1, purchase_t2
                     ) FROM STDIN WITH (FORMAT csv)
                     """;
 
@@ -75,27 +66,21 @@ public class RayanWalletCommandServiceImpl implements RayanWalletCommandService 
     }
 
     @Override
-    @Retryable(
-            noRetryFor = {BusinessException.class},
-            retryFor = {Exception.class},
-            maxAttemptsExpression = "${rayan.retry.max.attempts:3}",
-            backoff = @Backoff(delayExpression = "${rayan.retry.delay:10000}"))
     public RayanInitCreditResponseDTO initCredit(long credit, long dbsAccountNumber) {
         try {
             String token = rayanLoginService.getToken();
-            String response = rayanWalletGateway.initCredit(
+            String response = rayanHttpClient.initCredit(
                     token, credit,
                     Integer.parseInt(ApplicationConstants.BROKERAGE_CODE),
                     dbsAccountNumber);
             log.atInfo().log(response);
-        } catch (Exception e) {
+        } catch (RayanHttpException e) {
             log.atError().log(e.getMessage());
-            if (e instanceof HttpClientErrorException httpError && httpError.getStatusCode().is4xxClientError()) {
-                if (httpError.getStatusCode().value() == 401) {
-                    rayanLoginService.login();
-                } else {
-                    return new RayanInitCreditResponseDTO(false, e.getMessage());
-                }
+            if (e.status() == 401) {
+                rayanLoginService.login();
+                throw e;
+            } else if (e.status() >= 400 && e.status() < 500) {
+                return new RayanInitCreditResponseDTO(false, e.getMessage());
             }
             throw e;
         }
