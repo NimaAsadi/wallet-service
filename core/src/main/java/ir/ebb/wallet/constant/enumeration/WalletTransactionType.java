@@ -32,6 +32,5 @@ public enum WalletTransactionType {
     M1_TRADE_CANCELLATION,
     DBS_TRADE_CANCELLATION,
     GIFT_CARD,
-    BIDAR_DEPOSIT,
-    TRANSFER
+    BIDAR_DEPOSIT
 }

@@ -4,7 +4,7 @@ import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.BusinessException;
 import ir.ebb.common.model.user.User;
-import ir.ebb.wallet.actor.WalletActorService;
+import ir.ebb.wallet.wallet.WalletFacade;
 import ir.ebb.wallet.app.bridge.bidardeposit.dto.request.BidarDepositWalletDepositRequestDTO;
 import ir.ebb.wallet.app.bridge.bidardeposit.dto.request.BidarDepositWalletFreezeRequestDTO;
 import ir.ebb.wallet.app.bridge.bidardeposit.dto.request.BidarDepositWalletSpendRequestDTO;
@@ -19,14 +19,14 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class BidarDepositWalletWebServiceImpl implements BidarDepositWalletWebService {
 
-    private final WalletActorService walletActorService;
+    private final WalletFacade walletFacade;
     private final UserQueryService userQueryService;
 
     @Override
     public BidarDepositWalletResponseDTO deposit(BidarDepositWalletDepositRequestDTO request) {
         User user = userQueryService.getUserByDbsAccountNumber(request.dbsAccountNumber());
         try {
-            walletActorService.deposit(
+            walletFacade.deposit(
                     request.trackingId(), user, request.requestAmount(),
                     SettlementDelay.T_PLUS_0, WalletTransactionType.BIDAR_DEPOSIT);
         } catch (BusinessException e) {
@@ -40,7 +40,7 @@ public class BidarDepositWalletWebServiceImpl implements BidarDepositWalletWebSe
     public BidarDepositWalletResponseDTO freeze(BidarDepositWalletFreezeRequestDTO request) {
         User user = userQueryService.getUserByDbsAccountNumber(request.dbsAccountNumber());
         try {
-            walletActorService.freeze(
+            walletFacade.freeze(
                     request.trackingId(), user, request.requestAmount(),
                     SettlementDelay.T_PLUS_0, WalletTransactionType.BIDAR_DEPOSIT, false);
         } catch (BusinessException e) {
@@ -56,7 +56,7 @@ public class BidarDepositWalletWebServiceImpl implements BidarDepositWalletWebSe
     public BidarDepositWalletResponseDTO unfreeze(BidarDepositWalletUnfreezeRequestDTO request) {
         User user = userQueryService.getUserByDbsAccountNumber(request.dbsAccountNumber());
         try {
-            walletActorService.unfreeze(
+            walletFacade.unfreeze(
                     request.trackingId(), user, request.requestAmount(),
                     SettlementDelay.T_PLUS_0, WalletTransactionType.BIDAR_DEPOSIT);
         } catch (BusinessException e) {
@@ -72,7 +72,7 @@ public class BidarDepositWalletWebServiceImpl implements BidarDepositWalletWebSe
     public BidarDepositWalletResponseDTO spend(BidarDepositWalletSpendRequestDTO request) {
         User user = userQueryService.getUserByDbsAccountNumber(request.dbsAccountNumber());
         try {
-            walletActorService.spend(
+            walletFacade.spend(
                     request.trackingId(), user, request.requestAmount(),
                     SettlementDelay.T_PLUS_0, WalletTransactionType.BIDAR_DEPOSIT);
         } catch (BusinessException e) {

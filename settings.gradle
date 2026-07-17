@@ -1,8 +1,8 @@
 pluginManagement {
     repositories {
-        maven { url "https://nexus.ebidar.net/repository/maven_ebidar/" }
-        gradlePluginPortal()
         mavenCentral()
+        gradlePluginPortal()
+//        maven { url "https://nexus.ebidar.net/repository/maven_ebidar/" }
     }
 }
 rootProject.name = 'wallet-service'
@@ -17,8 +17,8 @@ include(
 
 dependencyResolutionManagement {
     repositories {
-        maven { url "https://nexus.ebidar.net/repository/maven_ebidar/" }
         mavenCentral()
+//        maven { url "https://nexus.ebidar.net/repository/maven_ebidar/" }
     }
     versionCatalogs {
         libs {
@@ -33,6 +33,32 @@ dependencyResolutionManagement {
             library('pekkoHttpJackson', 'org.apache.pekko', 'pekko-http-jackson_3').versionRef('pekkoHttp')
             bundle('pekkoBundle', ['pekko', 'pekkoSlf4j', 'pekkoStream'])
             bundle('httpBundle', ['pekkoHttpCore', 'pekkoHttp', 'pekkoHttpJackson'])
+
+            // ── Pekko Persistence / Sharding / Projection / Cluster (event sourcing) ─
+            //    cluster + sharding + persistence/query/serialization match the 1.6.0 train;
+            //    persistence-jdbc (1.2.0), projection (1.1.0) and management (1.1.0) are the
+            //    release trains verified compatible with Pekko 1.6.0 / Scala 3.
+            library('pekkoClusterTyped', 'org.apache.pekko', 'pekko-cluster-typed_3').versionRef('pekko')
+            library('pekkoClusterShardingTyped', 'org.apache.pekko', 'pekko-cluster-sharding-typed_3').versionRef('pekko')
+            library('pekkoPersistenceTyped', 'org.apache.pekko', 'pekko-persistence-typed_3').versionRef('pekko')
+            library('pekkoPersistenceQuery', 'org.apache.pekko', 'pekko-persistence-query_3').versionRef('pekko')
+            library('pekkoSerializationJackson', 'org.apache.pekko', 'pekko-serialization-jackson_3').versionRef('pekko')
+            version('pekkoPersistenceJdbc', '1.2.0')
+            library('pekkoPersistenceJdbc', 'org.apache.pekko', 'pekko-persistence-jdbc_3').versionRef('pekkoPersistenceJdbc')
+            version('pekkoProjection', '1.1.0')
+            library('pekkoProjectionCore', 'org.apache.pekko', 'pekko-projection-core_3').versionRef('pekkoProjection')
+            library('pekkoProjectionEventsourced', 'org.apache.pekko', 'pekko-projection-eventsourced_3').versionRef('pekkoProjection')
+            library('pekkoProjectionJdbc', 'org.apache.pekko', 'pekko-projection-jdbc_3').versionRef('pekkoProjection')
+            version('pekkoManagement', '1.1.0')
+            library('pekkoMgmtHttp', 'org.apache.pekko', 'pekko-management-cluster-http_3').versionRef('pekkoManagement')
+            library('pekkoMgmtBootstrap', 'org.apache.pekko', 'pekko-management-cluster-bootstrap_3').versionRef('pekkoManagement')
+            // K8s API node discovery for Cluster Bootstrap (same management 1.1.0 train).
+            library('pekkoDiscoveryK8s', 'org.apache.pekko', 'pekko-discovery-kubernetes-api_3').versionRef('pekkoManagement')
+            // Persistence testkit for entity/recovery unit tests
+            library('pekkoPersistenceTestkit', 'org.apache.pekko', 'pekko-persistence-testkit_3').versionRef('pekko')
+            bundle('pekkoClusterBundle', ['pekkoClusterTyped', 'pekkoClusterShardingTyped'])
+            bundle('pekkoPersistenceBundle', ['pekkoPersistenceTyped', 'pekkoPersistenceQuery', 'pekkoSerializationJackson', 'pekkoPersistenceJdbc'])
+            bundle('pekkoProjectionBundle', ['pekkoProjectionCore', 'pekkoProjectionEventsourced', 'pekkoProjectionJdbc'])
 
             // ── Persistence (plain JDBC, no JPA) ──────────────────────────────────
             library('postgres', 'org.postgresql', 'postgresql').version('42.7.4')

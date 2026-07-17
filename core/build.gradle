@@ -7,6 +7,9 @@ dependencies {
     api project(':user-info')
 
     api libs.bundles.pekkoBundle
+    api libs.bundles.pekkoClusterBundle
+    api libs.bundles.pekkoPersistenceBundle
+    api libs.bundles.pekkoProjectionBundle
     api libs.apacheCommons
     api libs.uuidCreator
 
@@ -16,4 +19,6 @@ dependencies {
     api libs.kafkaClients
 
     implementation libs.protobuf
+
+    testImplementation libs.pekkoPersistenceTestkit
 }

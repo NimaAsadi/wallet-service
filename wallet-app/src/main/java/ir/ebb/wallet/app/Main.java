@@ -14,8 +14,6 @@ import ir.ebb.external.rayan.wallet.service.command.RayanWalletHistoryCommandSer
 import ir.ebb.external.rayan.wallet.service.command.RayanWalletHistoryCommandServiceImpl;
 import ir.ebb.external.rayan.wallet.service.query.RayanWalletQueryService;
 import ir.ebb.external.rayan.wallet.service.query.RayanWalletQueryServiceImpl;
-import ir.ebb.wallet.actor.WalletActorService;
-import ir.ebb.wallet.actor.WalletRegistryActor;
 import ir.ebb.wallet.app.admin.service.AdminWalletTransactionWebService;
 import ir.ebb.wallet.app.admin.service.AdminWalletTransactionWebServiceImpl;
 import ir.ebb.wallet.app.admin.service.AdminWalletWebService;
@@ -44,12 +42,12 @@ import ir.ebb.wallet.app.web.GrpcServer;
 import ir.ebb.wallet.app.web.JwtVerifier;
 import ir.ebb.wallet.app.web.WalletHttpServer;
 import ir.ebb.wallet.app.web.WalletJobs;
+import ir.ebb.wallet.infrastructure.projection.ProjectionBootstrap;
+import ir.ebb.wallet.infrastructure.migration.LegacySeeder;
 import ir.ebb.wallet.repository.WalletRepository;
 import ir.ebb.wallet.repository.credit.CreditHistoryRepository;
 import ir.ebb.wallet.repository.transaction.WalletTransactionRepository;
 import ir.ebb.wallet.repository.turnover.TurnoverRepository;
-import ir.ebb.wallet.service.command.WalletCommandService;
-import ir.ebb.wallet.service.command.WalletCommandServiceImpl;
 import ir.ebb.wallet.service.credit.query.CreditHistoryQueryService;
 import ir.ebb.wallet.service.credit.query.CreditHistoryQueryServiceImpl;
 import ir.ebb.wallet.service.query.WalletQueryService;
@@ -60,22 +58,34 @@ import ir.ebb.wallet.service.turnover.command.TurnoverCommandService;
 import ir.ebb.wallet.service.turnover.command.TurnoverCommandServiceImpl;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryService;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryServiceImpl;
+import ir.ebb.wallet.wallet.WalletEntity;
+import ir.ebb.wallet.wallet.WalletFacade;
 import ir.ebb.userinfo.repository.UserRepository;
 import ir.ebb.userinfo.service.query.UserQueryService;
 import ir.ebb.userinfo.service.query.UserQueryServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pekko.actor.typed.ActorSystem;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.cluster.sharding.typed.javadsl.ClusterSharding;
+import org.apache.pekko.cluster.sharding.typed.javadsl.Entity;
 import org.apache.pekko.http.javadsl.Http;
 import org.apache.pekko.http.javadsl.ServerBinding;
+import org.apache.pekko.management.cluster.bootstrap.ClusterBootstrap;
+import org.apache.pekko.management.javadsl.PekkoManagement;
 
 import javax.sql.DataSource;
 
 /**
- * Composition root replacing Spring DI + {@code WalletApplication}. Wires
- * dependencies explicitly in order: config → HikariCP → Liquibase → JDBC repos →
- * domain services → ActorSystem → Rayan client → web services → HTTP/gRPC
- * servers → cron jobs, then blocks on ActorSystem termination. A JVM shutdown
- * hook tears everything down in reverse.
+ * Composition root replacing Spring DI + the legacy actor-registry root. Wires
+ * dependencies explicitly: config → HikariCP → Liquibase → JDBC repos → domain services →
+ * Pekko {@link ActorSystem} (cluster guardian) → Cluster Bootstrap + {@link ClusterSharding}
+ * (the {@link WalletEntity}) + {@link ProjectionBootstrap} → {@link WalletFacade} → Rayan →
+ * web services → HTTP/gRPC servers → cron jobs, then blocks on ActorSystem termination. A JVM
+ * shutdown hook tears everything down in reverse.
+ *
+ * <p>There is no actor registry: wallet entities are located exclusively via Cluster Sharding
+ * ({@code WalletFacade} → {@code sharding.entityRefFor("wallet", accountNumber)}). The event
+ * journal is the source of truth; reads are served by the CQRS projections.
  */
 @Slf4j
 public class Main {
@@ -104,9 +114,7 @@ public class Main {
         ir.ebb.external.rayan.wallet.repository.RayanWalletHistoryRepository rayanWalletHistoryRepository =
                 new ir.ebb.external.rayan.wallet.repository.RayanWalletHistoryRepository(dataSource);
 
-        // 3. domain services
-        WalletCommandService walletCommandService = new WalletCommandServiceImpl(
-                dataSource, walletRepository, walletTransactionRepository, creditHistoryRepository);
+        // 3. domain services (read side + turnover; wallet writes now go through the WalletFacade entity)
         WalletQueryService walletQueryService = new WalletQueryServiceImpl(walletRepository);
         TurnoverQueryService turnoverQueryService = new TurnoverQueryServiceImpl(turnoverRepository);
         TurnoverCommandService turnoverCommandService = new TurnoverCommandServiceImpl(turnoverRepository);
@@ -114,11 +122,36 @@ public class Main {
         WalletTransactionQueryService walletTransactionQueryService = new WalletTransactionQueryServiceImpl(walletTransactionRepository);
         UserQueryService userQueryService = new UserQueryServiceImpl(userRepository);
 
-        // 4. actor system (rooted at WalletRegistryActor)
-        ActorSystem<WalletRegistryActor.Command> actorSystem =
-                ActorSystem.create(WalletRegistryActor.create(walletCommandService), "wallet-actor-system", config);
+        // 4. actor system (cluster guardian root; no actor registry)
+        ActorSystem<String> actorSystem =
+                ActorSystem.create(Behaviors.<String>ignore(), "wallet-actor-system", config);
 
-        // 5. Rayan external integration
+        // 5. cluster: management HTTP (:8558) → Cluster Bootstrap (kubernetes-api) → sharding → projections
+        PekkoManagement.get(actorSystem).start().toCompletableFuture().join();
+        log.info("Pekko Management HTTP started on :{}", config.getInt("pekko.management.http.port"));
+        ClusterBootstrap.get(actorSystem).start();
+        ClusterSharding.get(actorSystem).init(
+                Entity.of(WalletEntity.ENTITY_TYPE_KEY, WalletEntity::create).withRole("wallet"));
+        log.info("Cluster Sharding initialized for wallet entity");
+
+        // 6. messaging
+        KafkaWalletProducer kafkaWalletProducer = new KafkaWalletProducer(
+                config.getString("wallet.kafka.bootstrap-servers"), objectMapper);
+        String walletStateTopic = config.getString("wallet.kafka.topic.wallet-state");
+
+        // 7. read-model + Kafka projections (CQRS; 16 tags via ShardedDaemonProcess)
+        new ProjectionBootstrap(actorSystem, dataSource, kafkaWalletProducer, walletStateTopic).start();
+        log.info("Wallet read-model + Kafka projections started");
+
+        // 8. write-side facade over the sharded, event-sourced WalletEntity
+        WalletFacade walletFacade = new WalletFacade(actorSystem, walletQueryService);
+
+        // 8a. one-off legacy seed (--seed-from-legacy): import existing wallet rows into the journal.
+        if (java.util.Arrays.asList(args).contains("--seed-from-legacy")) {
+            LegacySeeder.run(walletRepository, walletFacade);
+        }
+
+        // 9. Rayan external integration
         RayanHttpClient rayanHttpClient = new RayanHttpClient(
                 actorSystem, config.getString("wallet.rayan.base-url"), objectMapper);
         RayanLoginService rayanLoginService = new RayanLoginServiceImpl(
@@ -131,33 +164,28 @@ public class Main {
         RayanWalletCommandService rayanWalletCommandService = new RayanWalletCommandServiceImpl(rayanLoginService, rayanHttpClient, rayanWalletRepository, dataSource);
         RayanWalletHistoryCommandService rayanWalletHistoryCommandService = new RayanWalletHistoryCommandServiceImpl(rayanWalletHistoryRepository, dataSource);
 
-        // 6. actor facade + admin job service
-        WalletActorService walletActorService = new WalletActorService(actorSystem, walletQueryService, walletCommandService);
+        // 10. admin job service (Rayan sync reconciles sharded wallet entities toward Rayan snapshots)
         RayanWalletJobService rayanWalletJobService = new RayanWalletJobServiceImpl(
-                walletCommandService, walletQueryService,
+                walletFacade, walletQueryService,
                 rayanWalletCommandService, rayanWalletHistoryCommandService, turnoverCommandService);
 
-        // 7. messaging
-        KafkaWalletProducer kafkaWalletProducer = new KafkaWalletProducer(
-                config.getString("wallet.kafka.bootstrap-servers"), objectMapper);
-
-        // 8. web services
+        // 11. web services
         WalletWebService walletWebService = new WalletWebServiceImpl(walletQueryService);
         TurnoverWebService turnoverWebService = new TurnoverWebServiceImpl(turnoverQueryService);
         BridgeWalletWebService bridgeWalletWebService = new BridgeWalletWebServiceImpl(walletQueryService);
         BridgeTurnoverWebService bridgeTurnoverWebService = new BridgeTurnoverWebServiceImpl(turnoverQueryService, walletQueryService);
-        BidarDepositWalletWebService bidarDepositWalletWebService = new BidarDepositWalletWebServiceImpl(walletActorService, userQueryService);
+        BidarDepositWalletWebService bidarDepositWalletWebService = new BidarDepositWalletWebServiceImpl(walletFacade, userQueryService);
         boolean activeCredit = config.getBoolean("wallet.credit.active");
         AdminWalletWebService adminWalletWebService = new AdminWalletWebServiceImpl(
-                walletCommandService, walletQueryService, rayanWalletQueryService, rayanWalletCommandService,
-                creditHistoryQueryService, userQueryService, turnoverCommandService, activeCredit);
+                walletFacade, walletQueryService, rayanWalletQueryService, rayanWalletCommandService,
+                creditHistoryQueryService, creditHistoryRepository, userQueryService, activeCredit);
         AdminWalletTransactionWebService adminWalletTransactionWebService =
                 new AdminWalletTransactionWebServiceImpl(walletTransactionQueryService);
         TurnoverNotifyWebService turnoverNotifyWebService = new TurnoverNotifyWebServiceImpl(
                 turnoverQueryService, walletQueryService, kafkaWalletProducer,
                 config.getString("wallet.kafka.topic.turnover-notification"));
 
-        // 9. HTTP server
+        // 12. HTTP server
         JwtVerifier userVerifier = new JwtVerifier(config.getString("wallet.keycloak.user.jwk-set-uri"));
         JwtVerifier adminVerifier = new JwtVerifier(config.getString("wallet.keycloak.admin.jwk-set-uri"));
         JwtVerifier bridgeVerifier = new JwtVerifier(config.getString("wallet.keycloak.bridge.jwk-set-uri"));
@@ -171,14 +199,14 @@ public class Main {
                 .toCompletableFuture().join();
         log.info("HTTP server bound on {}", httpBinding.localAddress());
 
-        // 10. gRPC server
+        // 13. gRPC server
         GrpcServer grpcServer = new GrpcServer(
                 config.getInt("wallet.grpc.port"),
                 new WalletGrpcServiceImpl(walletQueryService),
                 new BridgeGrpcAuthInterceptor(bridgeVerifier));
         grpcServer.start();
 
-        // 11. scheduled jobs
+        // 14. scheduled jobs
         CronScheduler cronScheduler = new CronScheduler(actorSystem);
         new WalletJobs(cronScheduler, rayanWalletQueryService, rayanWalletJobService,
                 rayanWalletHistoryCommandService, turnoverNotifyWebService,
@@ -191,7 +219,7 @@ public class Main {
         log.info("wallet-service started (HTTP :{}, gRPC :{})",
                 httpBinding.localAddress().getPort(), config.getInt("wallet.grpc.port"));
 
-        // 12. shutdown hook
+        // 15. shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Shutting down wallet-service");
             httpBinding.unbind().toCompletableFuture().join();

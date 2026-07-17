@@ -79,6 +79,19 @@ public class CreditHistoryRepository {
                 e.getCreatedId(), e.getCreatedBy(), e.getErrorMessage());
     }
 
+    /**
+     * Inserts a credit-history audit row on its own connection. Credit history is an audit record
+     * (it carries admin metadata — createdId/createdBy/errorMessage — that is not part of the wallet
+     * event stream), so it is written directly alongside the entity's {@code AddCredit} command
+     * rather than being event-sourced.
+     */
+    public void save(CreditHistoryEntity e) {
+        Jdbc.withConn(dataSource, conn -> {
+            save(conn, e);
+            return null;
+        });
+    }
+
     private String buildWhere(CreditSpecificationDTO spec, List<Object> params) {
         List<String> clauses = new ArrayList<>();
         if (spec.userIds() != null && !spec.userIds().isEmpty()) {

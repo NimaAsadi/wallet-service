@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- pekko-persistence-jdbc journal + snapshot tables (event_journal, event_tag, snapshot).
+         The event journal is the single source of truth for wallet entities. -->
+    <changeSet id="10-pekko-persistence-journal" author="pekko-rewrite" dbms="postgresql">
+        <sqlFile path="db/changelog/sql/pekko-persistence-postgres.sql"
+                 relativeToChangelogFile="false"
+                 splitStatements="true"
+                 stripComments="true"/>
+    </changeSet>
+
+    <!-- pekko-projection-jdbc offset store + management tables (read-model projection offsets). -->
+    <changeSet id="11-pekko-projection-offset-store" author="pekko-rewrite" dbms="postgresql">
+        <sqlFile path="db/changelog/sql/pekko-projection-postgres.sql"
+                 relativeToChangelogFile="false"
+                 splitStatements="true"
+                 stripComments="true"/>
+    </changeSet>
+
+</databaseChangeLog>

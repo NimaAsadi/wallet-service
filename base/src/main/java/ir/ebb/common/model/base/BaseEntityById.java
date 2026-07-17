@@ -10,9 +10,9 @@ import java.util.UUID;
  * Re-homed from the dropped {@code ir.ebb:common} JAR (was a Hibernate
  * {@code @MappedSuperclass} with {@code @Id}/@Version}).
  * Plain base: a time-ordered UUID id is generated on construction (matching the
- * original no-arg-ctor behaviour); {@code version} backs the manual optimistic
- * lock in {@code WalletRepository.updateWalletNative}. Repositories override
- * both when loading existing rows from the DB.
+ * original no-arg-ctor behaviour); {@code version} is a vestigial column retained on
+ * the projection tables (the event journal is the source of truth; no optimistic lock).
+ * Repositories override both when loading existing rows from the DB.
  */
 @Getter
 @Setter

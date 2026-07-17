@@ -8,10 +8,19 @@ allprojects {
     version = '0.0.1'
 
     repositories {
-        maven {
-            url "https://nexus.ebidar.net/repository/maven_ebidar/"
-        }
         mavenCentral()
+//        maven {
+//            url "https://nexus.ebidar.net/repository/maven_ebidar/"
+//        }
+    }
+
+    // kafka-clients pulls org.lz4:lz4-java while pekko-serialization-jackson pulls
+    // at.yawk.lz4:lz4-java; both advertise the same 'org.lz4:lz4-java' capability, which
+    // Gradle cannot auto-resolve between two different modules. Pick one (highest version).
+    configurations.all {
+        resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') {
+            selectHighestVersion()
+        }
     }
 }
 
@@ -34,5 +43,15 @@ subprojects {
         useJUnitPlatform()
     }
 
+    // -parameters: lets Jackson's ParameterNamesModule map JSON fields to constructor parameters,
+    // reducing the annotations needed for Pekko Jackson serialization of messages/events.
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs << '-parameters'
+    }
+
     tasks.register("prepareKotlinBuildScriptModel") {}
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
 }

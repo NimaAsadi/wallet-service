@@ -7,5 +7,7 @@
 
     <include file="db/changelog/changesets/V001__init_schema.xml"/>
     <include file="db/changelog/changesets/V002__drop_shedlock.xml"/>
+    <include file="db/changelog/changesets/V003__pekko_persistence.xml"/>
+    <include file="db/changelog/changesets/V004__drop_dead_debt_cols.xml"/>
 
 </databaseChangeLog>

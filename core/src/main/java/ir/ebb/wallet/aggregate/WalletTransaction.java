@@ -5,13 +5,23 @@ import ir.ebb.wallet.constant.enumeration.WalletOperationType;
 import ir.ebb.wallet.constant.enumeration.WalletParameterType;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import ir.ebb.wallet.entity.WalletTransactionEntity;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
+/**
+ * Audit leg persisted inside {@code WalletEvent.WalletMutated} and projected into the
+ * {@code wallet_transaction} read model. Carries {@code @NoArgsConstructor}/{@code @AllArgsConstructor}
+ * (alongside {@code @Builder}) so Pekko's Jackson serializer can reconstruct it via the
+ * no-arg constructor + setters (records use their canonical constructor; this POJO needs the ctors).
+ */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WalletTransaction {
 
     private User user;

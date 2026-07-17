@@ -8,9 +8,10 @@ import ir.ebb.wallet.aggregate.Wallet;
 import ir.ebb.wallet.app.admin.transformer.WalletTransformer;
 import ir.ebb.wallet.constant.enumeration.TurnoverOperationType;
 import ir.ebb.wallet.entity.TurnoverEntity;
-import ir.ebb.wallet.service.command.WalletCommandService;
 import ir.ebb.wallet.service.query.WalletQueryService;
 import ir.ebb.wallet.service.turnover.command.TurnoverCommandService;
+import ir.ebb.wallet.wallet.WalletFacade;
+import ir.ebb.wallet.wallet.WalletState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RayanWalletJobServiceImpl implements RayanWalletJobService {
 
-    private final WalletCommandService walletCommandService;
+    private final WalletFacade walletFacade;
     private final WalletQueryService walletQueryService;
     private final RayanWalletCommandService rayanWalletCommandService;
     private final RayanWalletHistoryCommandService rayanWalletHistoryCommandService;
@@ -61,13 +62,15 @@ public class RayanWalletJobServiceImpl implements RayanWalletJobService {
                 return;
             }
             WalletTransformer.adapt(wallet, rayanWallet);
+            // Reconcile the sharded, event-sourced wallet toward the authoritative Rayan snapshot
+            // (fire-and-forget tell; the entity applies WalletMutated on top of its current state).
+            walletFacade.reconcileFromRayan(wallet.getUser(), WalletState.fromAggregate(wallet, List.of()));
             turnovers.add(new TurnoverEntity(
                     wallet.getUser(), wallet.getId(),
                     TurnoverOperationType.REMAINING,
                     wallet.getTotalAsset(), wallet.getId()));
         });
 
-        walletCommandService.saveAll(wallets);
         turnoverCommandService.saveAll(turnovers);
     }
 }

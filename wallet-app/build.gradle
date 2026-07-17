@@ -15,6 +15,13 @@ dependencies {
     implementation libs.bundles.grpcBundle
     implementation libs.bundles.jacksonBundle
 
+    // Cluster + Cluster Bootstrap (management HTTP on :8558) for the bootstrap root.
+    // Persistence / projection / sharding-typed APIs arrive transitively from :core (api).
+    implementation libs.bundles.pekkoClusterBundle
+    implementation libs.pekkoMgmtHttp
+    implementation libs.pekkoMgmtBootstrap
+    implementation libs.pekkoDiscoveryK8s
+
     implementation libs.nimbusJwt
     implementation libs.cronUtils
     implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
