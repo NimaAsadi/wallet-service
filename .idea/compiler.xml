@@ -16,4 +16,23 @@
     </annotationProcessing>
     <bytecodeTargetLevel target="17" />
   </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="wallet-service.base" options="-parameters" />
+      <module name="wallet-service.base.main" options="-parameters" />
+      <module name="wallet-service.base.test" options="-parameters" />
+      <module name="wallet-service.core" options="-parameters" />
+      <module name="wallet-service.core.main" options="-parameters" />
+      <module name="wallet-service.core.test" options="-parameters" />
+      <module name="wallet-service.external" options="-parameters" />
+      <module name="wallet-service.external.main" options="-parameters" />
+      <module name="wallet-service.external.test" options="-parameters" />
+      <module name="wallet-service.user-info" options="-parameters" />
+      <module name="wallet-service.user-info.main" options="-parameters" />
+      <module name="wallet-service.user-info.test" options="-parameters" />
+      <module name="wallet-service.wallet-app" options="-parameters" />
+      <module name="wallet-service.wallet-app.main" options="-parameters" />
+      <module name="wallet-service.wallet-app.test" options="-parameters" />
+    </option>
+  </component>
 </project>

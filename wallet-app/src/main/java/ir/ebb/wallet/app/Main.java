@@ -144,7 +144,7 @@ public class Main {
         log.info("Wallet read-model + Kafka projections started");
 
         // 8. write-side facade over the sharded, event-sourced WalletEntity
-        WalletFacade walletFacade = new WalletFacade(actorSystem, walletQueryService);
+        WalletFacade walletFacade = new WalletFacade(actorSystem);
 
         // 8a. one-off legacy seed (--seed-from-legacy): import existing wallet rows into the journal.
         if (java.util.Arrays.asList(args).contains("--seed-from-legacy")) {
@@ -170,9 +170,9 @@ public class Main {
                 rayanWalletCommandService, rayanWalletHistoryCommandService, turnoverCommandService);
 
         // 11. web services
-        WalletWebService walletWebService = new WalletWebServiceImpl(walletQueryService);
+        WalletWebService walletWebService = new WalletWebServiceImpl(walletFacade);
         TurnoverWebService turnoverWebService = new TurnoverWebServiceImpl(turnoverQueryService);
-        BridgeWalletWebService bridgeWalletWebService = new BridgeWalletWebServiceImpl(walletQueryService);
+        BridgeWalletWebService bridgeWalletWebService = new BridgeWalletWebServiceImpl(walletFacade);
         BridgeTurnoverWebService bridgeTurnoverWebService = new BridgeTurnoverWebServiceImpl(turnoverQueryService, walletQueryService);
         BidarDepositWalletWebService bidarDepositWalletWebService = new BidarDepositWalletWebServiceImpl(walletFacade, userQueryService);
         boolean activeCredit = config.getBoolean("wallet.credit.active");
@@ -202,7 +202,7 @@ public class Main {
         // 13. gRPC server
         GrpcServer grpcServer = new GrpcServer(
                 config.getInt("wallet.grpc.port"),
-                new WalletGrpcServiceImpl(walletQueryService),
+                new WalletGrpcServiceImpl(walletFacade),
                 new BridgeGrpcAuthInterceptor(bridgeVerifier));
         grpcServer.start();
 

@@ -108,6 +108,23 @@ public final class Jdbc {
         }
     }
 
+    /** Execute {@code sql} once per parameter set as a single JDBC batch (one round-trip instead of N).
+     *  Empty {@code paramSets} is a no-op. SQLException surfaces as {@link JdbcException}. */
+    public static int[] batchUpdate(Connection conn, String sql, List<Object[]> paramSets) {
+        if (paramSets.isEmpty()) {
+            return new int[0];
+        }
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (Object[] params : paramSets) {
+                bind(ps, params);
+                ps.addBatch();
+            }
+            return ps.executeBatch();
+        } catch (SQLException e) {
+            throw new JdbcException(e);
+        }
+    }
+
     public static long count(Connection conn, String sql, Object... params) {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             bind(ps, params);

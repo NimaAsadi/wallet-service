@@ -106,6 +106,47 @@ class WalletEntityTest {
     }
 
     @Test
+    void getWallet_afterDeposit_returnsSnapshotAndPersistsNothing() {
+        createWallet();
+        testKit.runCommand((ActorRef<WalletReply> ref) -> new WalletCommand.Deposit(UUID.randomUUID(), USER, 100L, T0, TYPE, ref));
+
+        var res = testKit.runCommand((ActorRef<WalletReply> ref) -> new WalletCommand.GetWallet(ref));
+        assertThat(res.reply()).isInstanceOf(WalletReply.WalletSnapshot.class);
+        assertThat(((WalletReply.WalletSnapshot) res.reply()).state().t0().balance()).isEqualTo(100L);
+        assertThat(res.hasNoEvents()).isTrue(); // read-only command persists nothing
+    }
+
+    @Test
+    void getWallet_beforeCreate_isRejectedAsWalletNotExist() {
+        var res = testKit.runCommand((ActorRef<WalletReply> ref) -> new WalletCommand.GetWallet(ref));
+        assertThat(res.reply()).isInstanceOf(WalletReply.Rejected.class);
+        assertThat(((WalletReply.Rejected) res.reply()).code()).isEqualTo(4001); // WALLET_NOT_EXIST
+        assertThat(res.hasNoEvents()).isTrue();
+    }
+
+    @Test
+    void getBuyingPower_afterDeposit_returnsComputedBuyingPower() {
+        createWallet();
+        testKit.runCommand((ActorRef<WalletReply> ref) -> new WalletCommand.Deposit(UUID.randomUUID(), USER, 100L, T0, TYPE, ref));
+
+        var t0bp = testKit.runCommand((ActorRef<WalletReply> ref) -> new WalletCommand.GetBuyingPower(SettlementDelay.T_PLUS_0, ref));
+        assertThat(t0bp.reply()).isInstanceOf(WalletReply.BuyingPowerResult.class);
+        assertThat(((WalletReply.BuyingPowerResult) t0bp.reply()).buyingPower().balance()).isEqualTo(100L);
+        assertThat(t0bp.hasNoEvents()).isTrue(); // read-only command persists nothing
+
+        // T_PLUS_2 sums every tier → also 100 (the deposit landed in t0).
+        var t2bp = testKit.runCommand((ActorRef<WalletReply> ref) -> new WalletCommand.GetBuyingPower(SettlementDelay.T_PLUS_2, ref));
+        assertThat(((WalletReply.BuyingPowerResult) t2bp.reply()).buyingPower().balance()).isEqualTo(100L);
+    }
+
+    @Test
+    void getBuyingPower_beforeCreate_isRejectedAsWalletNotExist() {
+        var res = testKit.runCommand((ActorRef<WalletReply> ref) -> new WalletCommand.GetBuyingPower(SettlementDelay.T_PLUS_0, ref));
+        assertThat(res.reply()).isInstanceOf(WalletReply.Rejected.class);
+        assertThat(((WalletReply.Rejected) res.reply()).code()).isEqualTo(4001); // WALLET_NOT_EXIST
+    }
+
+    @Test
     void restart_recoversStateFromJournal() {
         createWallet();
         testKit.runCommand((ActorRef<WalletReply> ref) -> new WalletCommand.Deposit(UUID.randomUUID(), USER, 100L, T0, TYPE, ref));

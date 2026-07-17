@@ -43,7 +43,7 @@ import java.util.UUID;
  * (absolute resulting-state values). The journal serializes writes per persistence-id,
  * replacing the old optimistic-lock + reload-and-retry path.
  *
- * <p>Events are tagged (via {@link #tagsFor(Object)}) to one of {@link WalletTags#NUM_TAGS}
+ * <p>Events are tagged (via ) to one of {@link WalletTags#NUM_TAGS}
  * streams so read-model {@code EventsByTag} projections can run a worker per tag.
  */
 @Slf4j
@@ -120,6 +120,8 @@ public class WalletEntity extends EventSourcedBehavior<WalletCommand, WalletEven
                 .onCommand(WalletCommand.FreezeForT0.class, this::onFreezeForT0)
                 .onCommand(WalletCommand.SpendT0.class, this::onSpendT0)
                 .onCommand(WalletCommand.AddCredit.class, this::onAddCredit)
+                .onCommand(WalletCommand.GetWallet.class, this::onGetWallet)
+                .onCommand(WalletCommand.GetBuyingPower.class, this::onGetBuyingPower)
                 .onCommand(WalletCommand.ChargeSeparCredit.class, this::onChargeSeparCredit)
                 .onCommand(WalletCommand.SettleSeparCredit.class, this::onSettleSeparCredit)
                 .onCommand(WalletCommand.ReconcileFromRayan.class, this::onReconcile)
@@ -133,11 +135,11 @@ public class WalletEntity extends EventSourcedBehavior<WalletCommand, WalletEven
             return reject(cmd.replyTo(), 4002, "Wallet already exists for account " + accountNumber);
         }
         WalletState initial = new WalletState(
-                cmd.walletId(), accountNumber, cmd.user(),
+                cmd.walletId(), accountNumber, null,
                 WalletState.Tier.ZERO, WalletState.Tier.ZERO, WalletState.Tier.ZERO,
                 0L, 0L, 0L, 0L, WalletState.Debt.ZERO, List.of());
         return Effect().persist(new WalletEvent.WalletCreated(initial))
-                .thenReply(cmd.replyTo(), s -> new WalletReply.Accepted(s));
+                .thenReply(cmd.replyTo(), WalletReply.Accepted::new);
     }
 
     private Effect<WalletEvent, WalletState> onDeposit(WalletState s, WalletCommand.Deposit c) {
@@ -178,6 +180,25 @@ public class WalletEntity extends EventSourcedBehavior<WalletCommand, WalletEven
     private Effect<WalletEvent, WalletState> onAddCredit(WalletState s, WalletCommand.AddCredit c) {
         return onMutation(s, c.replyTo(), c.trackingId(),
                 w -> w.addCredit(c.trackingId(), new Money(c.creditAmount())));
+    }
+
+    /** Read: reply with the authoritative current state. No event persisted. */
+    private Effect<WalletEvent, WalletState> onGetWallet(WalletState s, WalletCommand.GetWallet c) {
+        if (!s.isCreated()) {
+            return reject(c.replyTo(), ExceptionConstants.WALLET_NOT_EXIST.getCode(),
+                    ExceptionConstants.WALLET_NOT_EXIST.getMessage());
+        }
+        return Effect().reply(c.replyTo(), new WalletReply.WalletSnapshot(s));
+    }
+
+    /** Read: compute buying power from the current state and reply. No event persisted. */
+    private Effect<WalletEvent, WalletState> onGetBuyingPower(WalletState s, WalletCommand.GetBuyingPower c) {
+        if (!s.isCreated()) {
+            return reject(c.replyTo(), ExceptionConstants.WALLET_NOT_EXIST.getCode(),
+                    ExceptionConstants.WALLET_NOT_EXIST.getMessage());
+        }
+        return Effect().reply(c.replyTo(),
+                new WalletReply.BuyingPowerResult(s.toAggregate().buyingPower(c.settlementDelay())));
     }
 
     private Effect<WalletEvent, WalletState> onChargeSeparCredit(WalletState s, WalletCommand.ChargeSeparCredit c) {

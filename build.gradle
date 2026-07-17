@@ -17,7 +17,7 @@ allprojects {
     // kafka-clients pulls org.lz4:lz4-java while pekko-serialization-jackson pulls
     // at.yawk.lz4:lz4-java; both advertise the same 'org.lz4:lz4-java' capability, which
     // Gradle cannot auto-resolve between two different modules. Pick one (highest version).
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') {
             selectHighestVersion()
         }
@@ -29,7 +29,7 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(25)
+            languageVersion = JavaLanguageVersion.of(21)
         }
     }
 

@@ -8,6 +8,7 @@ import org.apache.pekko.projection.jdbc.javadsl.JdbcHandler;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,6 +22,11 @@ import java.util.UUID;
  * resulting {@link WalletState} (re-applying is a no-op); each audit leg is inserted with a
  * deterministic {@code id} derived from (persistenceId, sequenceNr, legIndex) so a replay
  * never duplicates a transaction row.
+ *
+ * <p><b>Blocking JDBC is expected here</b>: this handler runs on {@code wallet-blocking-dispatcher}
+ * (configured via {@code pekko.projection.jdbc.use-dispatcher}), which isolates the blocking
+ * Postgres round-trips from the actor system / HTTP threads. The leg inserts are batched into a
+ * single {@code executeBatch} to minimise blocking time and connection hold time per envelope.
  */
 public class WalletReadModelProjection extends JdbcHandler<EventEnvelope<WalletEvent>, JdbcSession> {
 
@@ -65,7 +71,7 @@ public class WalletReadModelProjection extends JdbcHandler<EventEnvelope<WalletE
             return;
         }
         List<WalletTransaction> legs = event instanceof WalletEvent.WalletMutated m ? m.legs() : List.of();
-        session.<Object>withConnection((Connection conn) -> {
+        session.withConnection((Connection conn) -> {
             Jdbc.update(conn, UPSERT_WALLET,
                     state.id(),
                     state.user() != null ? state.user().getKeycloakId() : null,
@@ -76,12 +82,14 @@ public class WalletReadModelProjection extends JdbcHandler<EventEnvelope<WalletE
                     state.credit(), state.initialCredit(), state.separCredit(), state.separInitialCredit());
             Jdbc.update(conn, UPSERT_WALLET_DEBT,
                     state.id(), state.debt().t2Tot0(), state.debt().t2Tot1(), state.debt().t1Tot0());
-            int idx = 0;
-            for (WalletTransaction leg : legs) {
+            // Batch the homogeneous leg inserts into one round-trip (N legs → 1 executeBatch).
+            List<Object[]> txBatches = new ArrayList<>(legs.size());
+            for (int idx = 0; idx < legs.size(); idx++) {
+                WalletTransaction leg = legs.get(idx);
                 UUID txId = UUID.nameUUIDFromBytes(
                         (envelope.persistenceId() + ":" + envelope.sequenceNr() + ":" + idx)
                                 .getBytes(StandardCharsets.UTF_8));
-                Jdbc.update(conn, INSERT_TX,
+                txBatches.add(new Object[]{
                         txId,
                         leg.getUser() != null ? leg.getUser().getKeycloakId() : null,
                         leg.getUser() != null ? leg.getUser().getDbsAccountNumber() : state.accountNumber(),
@@ -92,9 +100,10 @@ public class WalletReadModelProjection extends JdbcHandler<EventEnvelope<WalletE
                         leg.getAmount(),
                         leg.getTrackingId(),
                         leg.getFrozenBefore(), leg.getFrozenAfter(),
-                        leg.getBalanceBefore(), leg.getBalanceAfter());
-                idx++;
+                        leg.getBalanceBefore(), leg.getBalanceAfter()
+                });
             }
+            Jdbc.batchUpdate(conn, INSERT_TX, txBatches);
             return null;
         });
     }
