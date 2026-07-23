@@ -10,7 +10,7 @@ import java.util.UUID;
 
 /**
  * Immutable snapshot of a wallet aggregate — the persisted state of the
- * {@code WalletEntity} event-sourced behavior (persisted as a snapshot, also CBOR via
+ * {@code WalletEntity} event-sourced behavior (persisted as a snapshot, also JSON via
  * {@link WalletSerializable}) and the payload of each {@link WalletEvent.WalletMutated}
  * event. Because the wallet's money-movement cascade (see {@link Wallet}) is intricate
  * and already correct, the entity reuses that mutable aggregate as a transient

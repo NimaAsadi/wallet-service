@@ -72,14 +72,14 @@ public class AdminWalletWebServiceImpl implements AdminWalletWebService {
             User user = User.of(UUID.fromString(userId), dbsAccountNumber);
             if (!walletQueryService.existsWallet(user)) {
                 UUID walletId = UUID.randomUUID();
-                walletFacade.createWallet(walletId, user);
+                walletFacade.createWallet(dbsAccountNumber, walletId);
                 // Seed initial balances from the authoritative Rayan snapshot (fire-and-forget reconcile).
                 RayanWalletDTO rayanWalletDTO = rayanWalletQueryService.findUserWallet(dbsAccountNumber);
                 Wallet seed = new Wallet(user);
                 seed.setId(walletId);
                 seed.setAccountNumber(dbsAccountNumber);
                 WalletTransformer.adapt(seed, rayanWalletDTO);
-                walletFacade.reconcileFromRayan(user, WalletState.fromAggregate(seed, List.of()));
+                walletFacade.reconcileFromRayan(WalletState.fromAggregate(seed, List.of()));
             }
         } catch (Exception e) {
             log.atError().log("create wallet failed for userId={} account={}: {}", userId, dbsAccountNumber, e.getMessage());
@@ -108,7 +108,7 @@ public class AdminWalletWebServiceImpl implements AdminWalletWebService {
         CreditHistoryEntity creditHistory = new CreditHistoryEntity(userEntity, request.credit(),
                 RayanCreditStatus.PENDING, adminId, adminFullName);
         // Apply the credit ceiling through the event-sourced entity (trackingId = the credit-history id, for idempotency).
-        walletFacade.addCredit(creditHistory.getId(), user, request.credit());
+        walletFacade.addCredit(creditHistory.getId(), user.getDbsAccountNumber(), request.credit());
         // Call Rayan and record the outcome as a credit-history audit row (not event-sourced).
         RayanInitCreditResponseDTO response = rayanWalletCommandService.initCredit(
                 request.credit(), request.walletRequestDTO().dbsAccountNumber());
@@ -130,7 +130,7 @@ public class AdminWalletWebServiceImpl implements AdminWalletWebService {
         User user = wallet.getUser();
         CreditHistoryEntity creditHistory = new CreditHistoryEntity(userEntity, 0L,
                 RayanCreditStatus.PENDING, adminId, adminFullName);
-        walletFacade.addCredit(creditHistory.getId(), user, 0L);
+        walletFacade.addCredit(creditHistory.getId(), user.getDbsAccountNumber(), 0L);
         RayanInitCreditResponseDTO response = rayanWalletCommandService.initCredit(0L, request.dbsAccountNumber());
         creditHistory.setStatus(response.isSuccessful() ? RayanCreditStatus.SENT : RayanCreditStatus.ERROR);
         creditHistory.setErrorMessage(response.getErrorMessage());

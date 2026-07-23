@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- pekko-persistence-r2dbc journal + snapshot + projection tables (event_journal, snapshot,
+         projection_offset_store, projection_timestamp_offset_store, projection_management) in a
+         dedicated `pekko` schema. The legacy pekko-persistence-jdbc tables (V003) stay in `public`
+         until the one-off JDBC->R2DBC journal migration completes; they are dropped in a later
+         changeset once the migration is verified. The event journal is the single source of truth
+         for wallet entities. -->
+    <changeSet id="12-pekko-r2dbc-schema" author="r2dbc-migration" dbms="postgresql">
+        <sqlFile path="db/changelog/sql/pekko-r2dbc-postgres.sql"
+                 relativeToChangelogFile="false"
+                 splitStatements="true"
+                 stripComments="true"/>
+    </changeSet>
+
+</databaseChangeLog>

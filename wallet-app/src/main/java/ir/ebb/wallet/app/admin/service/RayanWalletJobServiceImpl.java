@@ -64,7 +64,7 @@ public class RayanWalletJobServiceImpl implements RayanWalletJobService {
             WalletTransformer.adapt(wallet, rayanWallet);
             // Reconcile the sharded, event-sourced wallet toward the authoritative Rayan snapshot
             // (fire-and-forget tell; the entity applies WalletMutated on top of its current state).
-            walletFacade.reconcileFromRayan(wallet.getUser(), WalletState.fromAggregate(wallet, List.of()));
+            walletFacade.reconcileFromRayan(WalletState.fromAggregate(wallet, List.of()));
             turnovers.add(new TurnoverEntity(
                     wallet.getUser(), wallet.getId(),
                     TurnoverOperationType.REMAINING,

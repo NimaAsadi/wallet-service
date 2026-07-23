@@ -14,6 +14,7 @@ dependencies {
     api libs.uuidCreator
 
     api libs.postgres
+    api libs.r2dbcPostgres
     api libs.hikari
     api libs.liquibase
     api libs.kafkaClients

@@ -9,5 +9,7 @@
     <include file="db/changelog/changesets/V002__drop_shedlock.xml"/>
     <include file="db/changelog/changesets/V003__pekko_persistence.xml"/>
     <include file="db/changelog/changesets/V004__drop_dead_debt_cols.xml"/>
+    <include file="db/changelog/changesets/V005__pekko_r2dbc.xml"/>
+    <include file="db/changelog/changesets/V006__drop_jdbc_persistence.xml"/>
 
 </databaseChangeLog>

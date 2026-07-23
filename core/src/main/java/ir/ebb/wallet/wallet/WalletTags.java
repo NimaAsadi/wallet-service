@@ -1,30 +1,19 @@
 package ir.ebb.wallet.wallet;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * Assigns each wallet entity's events to one of {@link #NUM_TAGS} tags based on the
- * account number, so {@code EventsByTag} projections can run a worker per tag in
- * parallel ({@code wallet-0} … {@code wallet-15}). Keeping a wallet's events on a
- * stable tag preserves event ordering for that wallet within a tag stream.
+ * Tags wallet entity events for the slice-based ({@code eventsBySlices}) R2DBC projection.
+ *
+ * <p>With {@code eventsBySlices} the projection consumes by entity type + slice range — the 1024
+ * slices are derived deterministically from each entity's persistence id, so all wallet events
+ * share a single tag. Splitting the slices across {@code N} projection workers happens in
+ * {@code ProjectionBootstrap} via {@code EventSourcedProvider.sliceRanges}. Unlike the old
+ * {@code eventsByTag} scheme, the number of parallel streams can be changed later without
+ * re-tagging the journal.
  */
 public final class WalletTags {
 
-    /** Number of parallel event streams (tune for cluster size). */
-    public static final int NUM_TAGS = 16;
+    /** Single tag applied to every wallet event (the slice, not the tag, drives partitioning). */
+    public static final String TAG = "wallet";
 
     private WalletTags() {}
-
-    public static String tagFor(long accountNumber) {
-        return "wallet-" + Math.floorMod(accountNumber, NUM_TAGS);
-    }
-
-    public static List<String> allTags() {
-        List<String> tags = new ArrayList<>(NUM_TAGS);
-        for (int i = 0; i < NUM_TAGS; i++) {
-            tags.add("wallet-" + i);
-        }
-        return tags;
-    }
 }

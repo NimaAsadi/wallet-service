@@ -3,12 +3,12 @@ package ir.ebb.wallet.wallet;
 /**
  * Marker interface for the wallet protocol types ({@link WalletCommand commands},
  * {@link WalletEvent events}, {@link WalletReply replies}, {@link WalletState state})
- * that are serialized with Pekko Jackson <em>CBOR</em>.
+ * that are serialized with Pekko Jackson <em>JSON</em>.
  *
  * <p>Bound once in {@code application.conf}:
  * <pre>
  * pekko.actor.serialization-bindings {
- *   "ir.ebb.wallet.wallet.WalletSerializable" = jackson-cbor
+ *   "ir.ebb.wallet.wallet.WalletSerializable" = jackson-json
  * }
  * </pre>
  * The concrete record type travels in the serialization manifest (Pekko's

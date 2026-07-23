@@ -4,7 +4,6 @@ import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.ApplicationException;
 import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.aggregate.Wallet;
 import ir.ebb.wallet.aggregate.WalletTransaction;
 import ir.ebb.wallet.constant.valueobject.Money;
@@ -43,11 +42,12 @@ import java.util.UUID;
  * (absolute resulting-state values). The journal serializes writes per persistence-id,
  * replacing the old optimistic-lock + reload-and-retry path.
  *
- * <p>Events are tagged (via ) to one of {@link WalletTags#NUM_TAGS}
- * streams so read-model {@code EventsByTag} projections can run a worker per tag.
+ * <p>Events are tagged with a single {@link WalletTags#TAG} so the slice-based
+ * {@code eventsBySlices} R2DBC projections can consume them (partitioning is by entity type
+ * + slice range, derived from the persistence id — see {@code ProjectionBootstrap}).
  */
 @Slf4j
-public class WalletEntity extends EventSourcedBehavior<WalletCommand, WalletEvent, WalletState> {
+public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent, WalletState> {
 
     public static final EntityTypeKey<WalletCommand> ENTITY_TYPE_KEY =
             EntityTypeKey.create(WalletCommand.class, "wallet");
@@ -59,7 +59,6 @@ public class WalletEntity extends EventSourcedBehavior<WalletCommand, WalletEven
     private static final int KEEP_SNAPSHOTS = 2;
 
     private final long accountNumber;
-    private final String tag;
 
     public static Behavior<WalletCommand> create(EntityContext<WalletCommand> ctx) {
         return create(ctx.getEntityId());
@@ -77,16 +76,15 @@ public class WalletEntity extends EventSourcedBehavior<WalletCommand, WalletEven
             // Passivate after inactivity: sharding recreates the entity from the journal on the
             // next message (receive-timeout → Passivate → Effect().stop()).
             context.setReceiveTimeout(Duration.ofMinutes(10), new WalletCommand.Passivate());
-            return Behaviors.supervise(new WalletEntity(pid, acct, WalletTags.tagFor(acct)))
+            return Behaviors.supervise(new WalletActor(pid, acct))
                     .onFailure(SupervisorStrategy.restartWithBackoff(
                             Duration.ofSeconds(1), Duration.ofSeconds(10), 0.2));
         });
     }
 
-    private WalletEntity(PersistenceId persistenceId, long accountNumber, String tag) {
+    private WalletActor(PersistenceId persistenceId, long accountNumber) {
         super(persistenceId);
         this.accountNumber = accountNumber;
-        this.tag = tag;
     }
 
     @Override
@@ -94,10 +92,10 @@ public class WalletEntity extends EventSourcedBehavior<WalletCommand, WalletEven
         return WalletState.empty();
     }
 
-    /** Tag every event of this entity with the entity's account-derived tag (for EventsByTag). */
+    /** Tag every wallet event with the single wallet tag (the R2DBC projection partitions by slice, not tag). */
     @Override
     public Set<String> tagsFor(WalletEvent event) {
-        return Set.of(tag);
+        return Set.of(WalletTags.TAG);
     }
 
     @Override

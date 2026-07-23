@@ -4,5 +4,5 @@ public final class ApplicationConstants {
 
     private ApplicationConstants() {}
 
-    public static String BROKERAGE_CODE = "189";
+    public static String BROKERAGE_CODE = "769";
 }

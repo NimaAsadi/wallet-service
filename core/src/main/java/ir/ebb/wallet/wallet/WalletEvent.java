@@ -5,8 +5,8 @@ import ir.ebb.wallet.aggregate.WalletTransaction;
 import java.util.List;
 
 /**
- * Persisted domain events of the {@link WalletEntity}. Serialized to the event journal
- * as CBOR via the {@link WalletSerializable} marker.
+ * Persisted domain events of the {@link WalletActor}. Serialized to the event journal
+ * as JSON via the {@link WalletSerializable} marker.
  *
  * <p>{@link WalletMutated} carries the audit {@code legs} produced by the aggregate
  * (each leg is a {@link WalletTransaction} with operation/parameter type, amount, and

@@ -30,19 +30,19 @@ dependencyResolutionManagement {
 
             // ── Pekko Persistence / Sharding / Projection / Cluster (event sourcing) ─
             //    cluster + sharding + persistence/query/serialization match the 1.6.0 train;
-            //    persistence-jdbc (1.2.0), projection (1.1.0) and management (1.1.0) are the
-            //    release trains verified compatible with Pekko 1.6.0 / Scala 3.
+            //    persistence-r2dbc (1.1.0), projection-r2dbc (1.1.0) and management (1.1.0) are
+            //    the release trains verified compatible with Pekko 1.6.0 / Scala 3.
             library('pekkoClusterTyped', 'org.apache.pekko', 'pekko-cluster-typed_3').versionRef('pekko')
             library('pekkoClusterShardingTyped', 'org.apache.pekko', 'pekko-cluster-sharding-typed_3').versionRef('pekko')
             library('pekkoPersistenceTyped', 'org.apache.pekko', 'pekko-persistence-typed_3').versionRef('pekko')
             library('pekkoPersistenceQuery', 'org.apache.pekko', 'pekko-persistence-query_3').versionRef('pekko')
             library('pekkoSerializationJackson', 'org.apache.pekko', 'pekko-serialization-jackson_3').versionRef('pekko')
-            version('pekkoPersistenceJdbc', '1.2.0')
-            library('pekkoPersistenceJdbc', 'org.apache.pekko', 'pekko-persistence-jdbc_3').versionRef('pekkoPersistenceJdbc')
+            version('pekkoPersistenceR2dbc', '1.1.0')
+            library('pekkoPersistenceR2dbc', 'org.apache.pekko', 'pekko-persistence-r2dbc_3').versionRef('pekkoPersistenceR2dbc')
             version('pekkoProjection', '1.1.0')
             library('pekkoProjectionCore', 'org.apache.pekko', 'pekko-projection-core_3').versionRef('pekkoProjection')
             library('pekkoProjectionEventsourced', 'org.apache.pekko', 'pekko-projection-eventsourced_3').versionRef('pekkoProjection')
-            library('pekkoProjectionJdbc', 'org.apache.pekko', 'pekko-projection-jdbc_3').versionRef('pekkoProjection')
+            library('pekkoProjectionR2dbc', 'org.apache.pekko', 'pekko-projection-r2dbc_3').versionRef('pekkoProjection')
             version('pekkoManagement', '1.1.0')
             library('pekkoMgmtHttp', 'org.apache.pekko', 'pekko-management-cluster-http_3').versionRef('pekkoManagement')
             library('pekkoMgmtBootstrap', 'org.apache.pekko', 'pekko-management-cluster-bootstrap_3').versionRef('pekkoManagement')
@@ -51,11 +51,14 @@ dependencyResolutionManagement {
             // Persistence testkit for entity/recovery unit tests
             library('pekkoPersistenceTestkit', 'org.apache.pekko', 'pekko-persistence-testkit_3').versionRef('pekko')
             bundle('pekkoClusterBundle', ['pekkoClusterTyped', 'pekkoClusterShardingTyped'])
-            bundle('pekkoPersistenceBundle', ['pekkoPersistenceTyped', 'pekkoPersistenceQuery', 'pekkoSerializationJackson', 'pekkoPersistenceJdbc'])
-            bundle('pekkoProjectionBundle', ['pekkoProjectionCore', 'pekkoProjectionEventsourced', 'pekkoProjectionJdbc'])
+            bundle('pekkoPersistenceBundle', ['pekkoPersistenceTyped', 'pekkoPersistenceQuery', 'pekkoSerializationJackson', 'pekkoPersistenceR2dbc'])
+            bundle('pekkoProjectionBundle', ['pekkoProjectionCore', 'pekkoProjectionEventsourced', 'pekkoProjectionR2dbc'])
 
-            // ── Persistence (plain JDBC, no JPA) ──────────────────────────────────
+            // ── Database drivers ─────────────────────────────────────────────────
+            //    PostgreSQL JDBC driver — read-side repos + Liquibase (blocking JDBC/Hikari).
             library('postgres', 'org.postgresql', 'postgresql').version('42.7.4')
+            //    PostgreSQL R2DBC driver — pekko-persistence-r2dbc journal/snapshot + projections.
+            library('r2dbcPostgres', 'org.postgresql', 'r2dbc-postgresql').version('1.1.1.RELEASE')
             library('hikari', 'com.zaxxer', 'HikariCP').version('5.1.0')
             library('liquibase', 'org.liquibase', 'liquibase-core').version('4.27.0')
 

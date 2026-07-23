@@ -58,7 +58,7 @@ import ir.ebb.wallet.service.turnover.command.TurnoverCommandService;
 import ir.ebb.wallet.service.turnover.command.TurnoverCommandServiceImpl;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryService;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryServiceImpl;
-import ir.ebb.wallet.wallet.WalletEntity;
+import ir.ebb.wallet.wallet.WalletActor;
 import ir.ebb.wallet.wallet.WalletFacade;
 import ir.ebb.userinfo.repository.UserRepository;
 import ir.ebb.userinfo.service.query.UserQueryService;
@@ -79,7 +79,7 @@ import javax.sql.DataSource;
  * Composition root replacing Spring DI + the legacy actor-registry root. Wires
  * dependencies explicitly: config → HikariCP → Liquibase → JDBC repos → domain services →
  * Pekko {@link ActorSystem} (cluster guardian) → Cluster Bootstrap + {@link ClusterSharding}
- * (the {@link WalletEntity}) + {@link ProjectionBootstrap} → {@link WalletFacade} → Rayan →
+ * (the {@link WalletActor}) + {@link ProjectionBootstrap} → {@link WalletFacade} → Rayan →
  * web services → HTTP/gRPC servers → cron jobs, then blocks on ActorSystem termination. A JVM
  * shutdown hook tears everything down in reverse.
  *
@@ -131,7 +131,7 @@ public class Main {
         log.info("Pekko Management HTTP started on :{}", config.getInt("pekko.management.http.port"));
         ClusterBootstrap.get(actorSystem).start();
         ClusterSharding.get(actorSystem).init(
-                Entity.of(WalletEntity.ENTITY_TYPE_KEY, WalletEntity::create).withRole("wallet"));
+                Entity.of(WalletActor.ENTITY_TYPE_KEY, WalletActor::create).withRole("wallet"));
         log.info("Cluster Sharding initialized for wallet entity");
 
         // 6. messaging
@@ -139,8 +139,8 @@ public class Main {
                 config.getString("wallet.kafka.bootstrap-servers"), objectMapper);
         String walletStateTopic = config.getString("wallet.kafka.topic.wallet-state");
 
-        // 7. read-model + Kafka projections (CQRS; 16 tags via ShardedDaemonProcess)
-        new ProjectionBootstrap(actorSystem, dataSource, kafkaWalletProducer, walletStateTopic).start();
+        // 7. read-model + Kafka projections (CQRS; eventsBySlices via ShardedDaemonProcess, R2DBC)
+        new ProjectionBootstrap(actorSystem, kafkaWalletProducer, walletStateTopic).start();
         log.info("Wallet read-model + Kafka projections started");
 
         // 8. write-side facade over the sharded, event-sourced WalletEntity
@@ -174,7 +174,7 @@ public class Main {
         TurnoverWebService turnoverWebService = new TurnoverWebServiceImpl(turnoverQueryService);
         BridgeWalletWebService bridgeWalletWebService = new BridgeWalletWebServiceImpl(walletFacade);
         BridgeTurnoverWebService bridgeTurnoverWebService = new BridgeTurnoverWebServiceImpl(turnoverQueryService, walletQueryService);
-        BidarDepositWalletWebService bidarDepositWalletWebService = new BidarDepositWalletWebServiceImpl(walletFacade, userQueryService);
+        BidarDepositWalletWebService bidarDepositWalletWebService = new BidarDepositWalletWebServiceImpl(walletFacade);
         boolean activeCredit = config.getBoolean("wallet.credit.active");
         AdminWalletWebService adminWalletWebService = new AdminWalletWebServiceImpl(
                 walletFacade, walletQueryService, rayanWalletQueryService, rayanWalletCommandService,

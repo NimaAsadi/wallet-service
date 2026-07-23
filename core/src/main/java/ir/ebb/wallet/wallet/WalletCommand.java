@@ -1,14 +1,13 @@
 package ir.ebb.wallet.wallet;
 
 import ir.ebb.common.constant.enumeration.SettlementDelay;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import org.apache.pekko.actor.typed.ActorRef;
 
 import java.util.UUID;
 
 /**
- * Command protocol for the {@link WalletEntity} sharded, event-sourced wallet entity.
+ * Command protocol for the {@link WalletActor} sharded, event-sourced wallet entity.
  * Every command targets exactly one wallet, addressed by {@code accountNumber} (the shard
  * entity id).
  *
@@ -17,7 +16,7 @@ import java.util.UUID;
  * {@link SeedFromLegacy} are <em>fire-and-forget</em> (no reply-to): they are fanned out in
  * bulk by scheduled jobs / batch callers.
  *
- * <p>{@link WalletSerializable} marks these for Pekko Jackson CBOR serialization.
+ * <p>{@link WalletSerializable} marks these for Pekko Jackson JSON serialization.
  */
 public sealed interface WalletCommand extends WalletSerializable {
 
