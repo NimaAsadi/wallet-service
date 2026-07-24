@@ -167,10 +167,6 @@ public class WalletFacade {
         };
     }
 
-//    private org.apache.pekko.cluster.sharding.typed.javadsl.EntityRef<WalletCommand> entityRef(User user) {
-//        return entityRef(user.getDbsAccountNumber());
-//    }
-
     private EntityRef<WalletCommand> entityRef(long accountNumber) {
         return sharding.entityRefFor(WalletActor.ENTITY_TYPE_KEY, String.valueOf(accountNumber));
     }

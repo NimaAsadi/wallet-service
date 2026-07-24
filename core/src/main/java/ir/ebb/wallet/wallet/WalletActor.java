@@ -72,14 +72,9 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
     public static Behavior<WalletCommand> create(String entityId) {
         long acct = Long.parseLong(entityId);
         PersistenceId pid = PersistenceId.of(ENTITY_TYPE_KEY.name(), entityId);
-        return Behaviors.setup(context -> {
-            // Passivate after inactivity: sharding recreates the entity from the journal on the
-            // next message (receive-timeout → Passivate → Effect().stop()).
-            context.setReceiveTimeout(Duration.ofMinutes(10), new WalletCommand.Passivate());
-            return Behaviors.supervise(new WalletActor(pid, acct))
-                    .onFailure(SupervisorStrategy.restartWithBackoff(
-                            Duration.ofSeconds(1), Duration.ofSeconds(10), 0.2));
-        });
+        return Behaviors.setup(context -> Behaviors.supervise(new WalletActor(pid, acct))
+                .onFailure(SupervisorStrategy.restartWithBackoff(
+                        Duration.ofSeconds(1), Duration.ofSeconds(10), 0.2)));
     }
 
     private WalletActor(PersistenceId persistenceId, long accountNumber) {
@@ -124,7 +119,6 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
                 .onCommand(WalletCommand.SettleSeparCredit.class, this::onSettleSeparCredit)
                 .onCommand(WalletCommand.ReconcileFromRayan.class, this::onReconcile)
                 .onCommand(WalletCommand.SeedFromLegacy.class, this::onSeed)
-                .onCommand(WalletCommand.Passivate.class, this::onPassivate)
                 .build();
     }
 
@@ -243,12 +237,6 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
             return Effect().none();
         }
         return Effect().persist(new WalletEvent.WalletSeeded(c.state()));
-    }
-
-    /** Passivate (stop) the idle entity; sharding revives it from the journal on the next command. */
-    private Effect<WalletEvent, WalletState> onPassivate(WalletState state, WalletCommand.Passivate cmd) {
-        log.debug("Passivating wallet entity {} after inactivity", accountNumber);
-        return Effect().stop();
     }
 
     /**

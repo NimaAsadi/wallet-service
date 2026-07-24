@@ -69,7 +69,4 @@ public sealed interface WalletCommand extends WalletSerializable {
 
     /** Fire-and-forget one-off migration: seed an entity's initial state from the legacy {@code wallet} row. Idempotent. */
     record SeedFromLegacy(WalletState state) implements WalletCommand {}
-
-    /** Internal lifecycle signal: sent to the entity by its receive-timeout to trigger passivation. Not sent by clients. */
-    record Passivate() implements WalletCommand {}
 }
