@@ -77,7 +77,8 @@ dependencyResolutionManagement {
 
             library('nimbusJwt', 'com.nimbusds', 'nimbus-jose-jwt').version('9.40')
             library('cronUtils', 'com.cronutils', 'cron-utils').version('9.2.1')
-            library('logback', 'ch.qos.logback', 'logback-classic').version('1.5.6')
+            library('logback', 'ch.qos.logback', 'logback-classic').version('1.5.20')
+            library('logstashLogbackEncoder', 'net.logstash.logback', 'logstash-logback-encoder').version('9.0')
             library('kafkaClients', 'org.apache.kafka', 'kafka-clients').version('3.8.1')
 
             library('lombok', 'org.projectlombok', 'lombok').version('1.18.38')

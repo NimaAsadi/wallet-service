@@ -30,6 +30,8 @@ dependencies {
     implementation libs.uuidCreator
     implementation libs.apacheCommons
     implementation libs.protobuf
+    implementation libs.logback
+    implementation libs.logstashLogbackEncoder
 }
 
 application {
