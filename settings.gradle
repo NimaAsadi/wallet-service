@@ -85,6 +85,7 @@ dependencyResolutionManagement {
             library('apacheCommons', 'org.apache.commons', 'commons-lang3').version('3.19.0')
             library('uuidCreator', 'com.github.f4b6a3', 'uuid-creator').version('6.0.0')
             library('protobuf', 'com.google.protobuf', 'protobuf-java').version('4.33.0')
+            library('vavr', 'io.vavr', 'vavr').version('1.0.1')
 
             // ── Test ───────────────────────────────────────────────────────────────
             version('junit', '5.10.3')

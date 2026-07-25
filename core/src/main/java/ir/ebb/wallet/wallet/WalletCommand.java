@@ -2,6 +2,7 @@ package ir.ebb.wallet.wallet;
 
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
+import org.apache.pekko.Done;
 import org.apache.pekko.actor.typed.ActorRef;
 
 import java.util.UUID;
@@ -69,4 +70,9 @@ public sealed interface WalletCommand extends WalletSerializable {
 
     /** Fire-and-forget one-off migration: seed an entity's initial state from the legacy {@code wallet} row. Idempotent. */
     record SeedFromLegacy(WalletState state) implements WalletCommand {}
+
+    //---------------------------------------------------------------------------------------------------------------
+
+    record Deposit2(UUID trackingId, long accountNumber, long amount, SettlementDelay settlementDelay,
+                   WalletTransactionType type, ActorRef<Done> replyTo) implements WalletCommand {}
 }

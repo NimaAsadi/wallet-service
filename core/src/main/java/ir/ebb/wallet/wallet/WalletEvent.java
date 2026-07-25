@@ -1,8 +1,11 @@
 package ir.ebb.wallet.wallet;
 
+import ir.ebb.common.constant.enumeration.SettlementDelay;
+import ir.ebb.wallet.aggregate.Wallet;
 import ir.ebb.wallet.aggregate.WalletTransaction;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Persisted domain events of the {@link WalletActor}. Serialized to the event journal
@@ -25,4 +28,8 @@ public sealed interface WalletEvent extends WalletSerializable {
 
     /** Migration seed: sets the initial state from a legacy {@code wallet} row. */
     record WalletSeeded(WalletState state) implements WalletEvent {}
+
+    record WalletCreated2(Wallet wallet) implements WalletEvent {}
+
+    record WalletDeposited(Long amount, SettlementDelay settlementDelay, UUID trackingId) implements WalletEvent {}
 }
