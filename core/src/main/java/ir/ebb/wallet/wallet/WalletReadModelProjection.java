@@ -166,6 +166,9 @@ public class WalletReadModelProjection extends R2dbcHandler<EventEnvelope<Wallet
             case WalletEvent.WalletCreated e -> e.initialState();
             case WalletEvent.WalletMutated e -> e.resultingState();
             case WalletEvent.WalletSeeded e -> e.state();
+            // WalletCreated2 / WalletDeposited are sealed-permitted but never persisted — the
+            // projection only ever sees the three real events. Defensive default for exhaustiveness.
+            default -> throw new IllegalStateException("Unexpected WalletEvent: " + event);
         };
     }
 }

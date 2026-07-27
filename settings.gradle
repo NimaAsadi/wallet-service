@@ -75,6 +75,11 @@ dependencyResolutionManagement {
             library('jacksonJsr310', 'com.fasterxml.jackson.datatype', 'jackson-datatype-jsr310').versionRef('jackson')
             bundle('jacksonBundle', ['jacksonDatabind', 'jacksonJsr310'])
 
+            // Fastjson2 — the Pekko serializer for wallet protocol messages (commands/events/
+            // replies/state). Jackson above remains only for HTTP/Kafka/Rayan, NOT Pekko serialization.
+            version('fastjson2', '2.0.57')
+            library('fastjson2', 'com.alibaba.fastjson2', 'fastjson2').versionRef('fastjson2')
+
             library('nimbusJwt', 'com.nimbusds', 'nimbus-jose-jwt').version('9.40')
             library('cronUtils', 'com.cronutils', 'cron-utils').version('9.2.1')
             library('logback', 'ch.qos.logback', 'logback-classic').version('1.5.20')

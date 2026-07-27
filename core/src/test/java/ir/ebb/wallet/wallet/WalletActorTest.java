@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * (in-memory journal/snapshot — no DB). Covers command→event→state, wallet-not-exist rejection,
  * duplicate-trackingId idempotency, insufficient-balance rejection, and recovery from the journal.
  * The testkit round-trips each persisted event through serialization, so this also exercises the
- * Jackson JSON binding.
+ * Fastjson2 serializer (ir.ebb.wallet.serialization.FastJsonSerializer).
  */
 class WalletActorTest {
 
@@ -36,11 +36,14 @@ class WalletActorTest {
 
     @BeforeEach
     void setUp() {
-        // Testkit journal/snapshot + the wallet JSON serialization binding (no cluster/jdbc).
+        // Testkit journal/snapshot + the wallet Fastjson2 serialization binding (no cluster/jdbc).
+        // Mirrors wallet-app/application.conf so the testkit round-trip exercises FastJsonSerializer.
         Config config = EventSourcedBehaviorTestKit.config().withFallback(ConfigFactory.parseString(
-                "pekko.actor.serialization-bindings {\n" +
-                "  \"ir.ebb.wallet.wallet.WalletSerializable\" = jackson-json\n" +
-                "}"));
+                "pekko.actor {\n" +
+                "  serializers { wallet-fastjson = \"ir.ebb.wallet.serialization.FastJsonSerializer\" }\n" +
+                "  serialization-identifiers { wallet-fastjson = 700001 }\n" +
+                "  serialization-bindings { \"ir.ebb.wallet.wallet.WalletSerializable\" = wallet-fastjson }\n" +
+                "}\n"));
         system = ActorSystem.create(Behaviors.empty(), "wallet-entity-test", config);
         testKit = EventSourcedBehaviorTestKit.create(system, WalletActor.create(String.valueOf(ACCOUNT)));
     }
