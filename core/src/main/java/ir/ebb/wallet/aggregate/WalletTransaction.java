@@ -24,7 +24,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class WalletTransaction {
 
-    private User user;
+    private long accountNumber;
     private UUID walletId;
     private WalletOperationType walletOperationType;
     private WalletTransactionType walletTransactionType;
@@ -38,7 +38,7 @@ public class WalletTransaction {
 
     public WalletTransactionEntity adaptToEntity() {
         WalletTransactionEntity entity = new WalletTransactionEntity();
-        entity.setUser(user);
+        entity.setAccountNumber(accountNumber);
         entity.setWalletId(walletId);
         entity.setWalletOperationType(walletOperationType);
         entity.setWalletTransactionType(walletTransactionType);

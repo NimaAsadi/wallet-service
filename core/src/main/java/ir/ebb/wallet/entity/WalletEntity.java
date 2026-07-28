@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 public class WalletEntity extends BaseEntityById {
 
-    private User user;
+    private long accountNumber;
 
     private WalletParameterEmbedded t0 = new WalletParameterEmbedded();
     private WalletParameterEmbedded t1 = new WalletParameterEmbedded();
@@ -39,7 +39,7 @@ public class WalletEntity extends BaseEntityById {
     }
 
     public Wallet adaptToDomain() {
-        Wallet wallet = new Wallet(this.getUser());
+        Wallet wallet = new Wallet(accountNumber);
         wallet.setVersion(this.getVersion());
         wallet.setId(super.getId());
         wallet.setCredit(this.getCredit());
