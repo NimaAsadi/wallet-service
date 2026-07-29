@@ -4,7 +4,6 @@ plugins {
 
 dependencies {
     api project(':base')
-    api project(':user-info')
 
     api libs.bundles.pekkoBundle
     api libs.bundles.pekkoClusterBundle

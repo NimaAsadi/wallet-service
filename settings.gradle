@@ -7,7 +7,7 @@ pluginManagement {
 }
 rootProject.name = 'wallet-service'
 
-include("base", "core", "external", "user-info", "wallet-app")
+include("base", "core", "external", "wallet-app")
 
 dependencyResolutionManagement {
     repositories {
