@@ -10,6 +10,7 @@ public record BalanceDeposited(
         UUID trackingId,
         Money value,
         SettlementDelay settlementDelay,
-        WalletTransactionType walletTransactionType
+        WalletTransactionType walletTransactionType,
+        Long dbsAccountNumber
 ) implements WalletEvent {
 }

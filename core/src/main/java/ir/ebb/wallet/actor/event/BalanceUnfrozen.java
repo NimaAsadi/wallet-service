@@ -11,6 +11,7 @@ public record BalanceUnfrozen(
         Money value,
         SettlementDelay settlementDelay,
         WalletTransactionType walletTransactionType,
-        boolean canSpendSeparCredit
+        boolean canSpendSeparCredit,
+        Long dbsAccountNumber
 ) implements WalletEvent {
 }

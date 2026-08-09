@@ -137,7 +137,7 @@ public class WalletAggregate implements WalletSerializable {
         if (bp.sum(command.canSpendSeparCredit()) < command.value().value())
             throw new BusinessException(ExceptionConstants.INSUFFICIENT_BALANCE);
 
-        return new BalanceFrozen(command.trackingId(), command.value(), command.settlementDelay(), command.walletTransactionType(), command.canSpendSeparCredit());
+        return new BalanceFrozen(command.trackingId(), command.value(), command.settlementDelay(), command.walletTransactionType(), command.canSpendSeparCredit(), this.dbsAccountNumber);
     }
 
     private void applyEvent(BalanceFrozen event) {
@@ -188,7 +188,8 @@ public class WalletAggregate implements WalletSerializable {
                 command.value(),
                 command.settlementDelay(),
                 command.walletTransactionType(),
-                command.canSpendSeparCredit()
+                command.canSpendSeparCredit(),
+                this.dbsAccountNumber
         );
     }
 
@@ -203,7 +204,13 @@ public class WalletAggregate implements WalletSerializable {
         if (trackingIds.contains(command.trackingId()))
             throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
 
-        return new BalanceDeposited(command.trackingId(), command.value(), command.settlementDelay(), command.walletTransactionType());
+        return new BalanceDeposited(
+                command.trackingId(),
+                command.value(),
+                command.settlementDelay(),
+                command.walletTransactionType(),
+                this.dbsAccountNumber
+        );
     }
 
     private void applyEvent(BalanceDeposited event) {
@@ -286,13 +293,14 @@ public class WalletAggregate implements WalletSerializable {
                 command.value(),
                 command.settlementDelay(),
                 command.walletTransactionType(),
-                command.canSpendSeparCredit()
+                command.canSpendSeparCredit(),
+                this.dbsAccountNumber
         );
     }
 
     private void applyEvent(BalanceUnfrozen event) {
         trackingIds.add(event.trackingId());
-        applyEvent(new Spent(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), event.canSpendSeparCredit()));
-        applyEvent(new BalanceDeposited(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType()));
+        applyEvent(new Spent(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), event.canSpendSeparCredit(), this.dbsAccountNumber));
+        applyEvent(new BalanceDeposited(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), this.dbsAccountNumber));
     }
 }
