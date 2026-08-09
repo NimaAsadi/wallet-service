@@ -159,7 +159,7 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
             return reject(cmd.replyTo(), 4002, "Wallet already exists for account " + accountNumber);
         }
         WalletState initial = new WalletState(
-                cmd.walletId(), accountNumber, null,
+                cmd.walletId(), accountNumber,
                 WalletState.Tier.ZERO, WalletState.Tier.ZERO, WalletState.Tier.ZERO,
                 0L, 0L, 0L, 0L, WalletState.Debt.ZERO, List.of());
         return Effect().persist(new WalletEvent.WalletCreated(initial))

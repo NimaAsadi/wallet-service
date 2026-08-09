@@ -4,7 +4,6 @@ plugins {
 
 dependencies {
     api project(':base')
-    api project(':user-info')
 
     api libs.bundles.pekkoBundle
     api libs.bundles.pekkoClusterBundle
@@ -13,6 +12,7 @@ dependencies {
     api libs.apacheCommons
     api libs.uuidCreator
     api libs.vavr
+    api libs.fastjson2
 
     api libs.postgres
     api libs.r2dbcPostgres

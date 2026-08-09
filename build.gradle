@@ -43,8 +43,9 @@ subprojects {
         useJUnitPlatform()
     }
 
-    // -parameters: lets Jackson's ParameterNamesModule map JSON fields to constructor parameters,
-    // reducing the annotations needed for Pekko Jackson serialization of messages/events.
+    // -parameters: exposes constructor/record-component parameter names in bytecode, so Fastjson2
+    // (the wallet serializer) and Jackson (HTTP/Kafka/Rayan) map JSON fields to canonical-ctor
+    // params without per-field annotations.
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs << '-parameters'
     }

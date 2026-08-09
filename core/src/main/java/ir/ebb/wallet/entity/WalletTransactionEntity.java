@@ -1,7 +1,6 @@
 package ir.ebb.wallet.entity;
 
 import ir.ebb.common.model.base.BaseEntityById;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.WalletOperationType;
 import ir.ebb.wallet.constant.enumeration.WalletParameterType;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
@@ -18,7 +17,7 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 public class WalletTransactionEntity extends BaseEntityById {
 
-    private User user;
+    private long accountNumber;
     private UUID walletId;
     private WalletOperationType walletOperationType;
     private WalletTransactionType walletTransactionType;

@@ -3,7 +3,6 @@ package ir.ebb.wallet.aggregate;
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.ApplicationException;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.WalletOperationType;
 import ir.ebb.wallet.constant.enumeration.WalletParameterType;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
@@ -31,13 +30,12 @@ public class Wallet {
     private Long initialCredit;
     private Long separCredit;
     private Long separInitialCredit;
-    private User user;
     private WalletDebt walletDebt;
     private List<WalletTransaction> walletTransactions;
-    private Long accountNumber;
+    private long accountNumber;
 
-    public Wallet(User user) {
-        this.user = user;
+    public Wallet(long accountNumber) {
+        this.accountNumber = accountNumber;
         this.t0 = new WalletParameter();
         this.t1 = new WalletParameter();
         this.t2 = new WalletParameter();
@@ -128,7 +126,7 @@ public class Wallet {
         Long newFrozen = currentFreeze - currentValue;
         walletParameter.setFrozen(newFrozen);
         addWalletTransaction(currentValue, WalletOperationType.SPEND, walletTransactionType, WalletParameterType.getBySettlementDelay(settlementDelay), trackingId, currentFreeze, newFrozen, walletParameter.getBalance(), walletParameter.getBalance());
-        log.atInfo().log("Spend {} for trackingId#{} user#{} frozen: before#{} after#{}", currentValue, trackingId, user, currentFreeze, newFrozen);
+        log.atInfo().log("Spend {} for trackingId#{} user#{} frozen: before#{} after#{}", currentValue, trackingId, accountNumber, currentFreeze, newFrozen);
     }
 
     public void unfreeze(UUID trackingId, Money value, SettlementDelay settlementDelay, WalletTransactionType walletTransactionType) throws ApplicationException {
@@ -184,7 +182,7 @@ public class Wallet {
     public WalletEntity adaptToEntity() {
         WalletDebtEntity walletDebtEntity = walletDebt.adapt();
         WalletEntity walletEntity = WalletEntity.of(
-                user,
+                accountNumber,
                 t0.adapt(), t1.adapt(), t2.adapt(),
                 credit, initialCredit, separCredit, separInitialCredit,
                 walletDebtEntity);
@@ -290,7 +288,8 @@ public class Wallet {
                                       Long balanceBefore, Long balanceAfter) {
         if (amount == null || amount <= 0L) return;
         walletTransactions.add(WalletTransaction.builder()
-                .walletId(id).user(user)
+                .walletId(id)
+                .accountNumber(accountNumber)
                 .walletOperationType(walletOperationType)
                 .walletTransactionType(walletTransactionType)
                 .walletParameterType(walletParameterType)

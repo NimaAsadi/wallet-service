@@ -17,7 +17,8 @@ import java.util.UUID;
  * {@link SeedFromLegacy} are <em>fire-and-forget</em> (no reply-to): they are fanned out in
  * bulk by scheduled jobs / batch callers.
  *
- * <p>{@link WalletSerializable} marks these for Pekko Jackson JSON serialization.
+ * <p>{@link WalletSerializable} marks these for serialization by Pekko with the custom
+ * Fastjson2 serializer ({@code ir.ebb.wallet.serialization.FastJsonSerializer}).
  */
 public sealed interface WalletCommand extends WalletSerializable {
 

@@ -25,7 +25,6 @@ import java.util.UUID;
 public record WalletState(
         UUID id,
         long accountNumber,
-        User user,
         Tier t0,
         Tier t1,
         Tier t2,
@@ -53,7 +52,7 @@ public record WalletState(
 
     /** State for an entity that has not yet been created (no {@code WalletCreated} / {@code SeedFromLegacy} event). */
     public static WalletState empty() {
-        return new WalletState(null, 0L, null, Tier.ZERO, Tier.ZERO, Tier.ZERO,
+        return new WalletState(null, 0L,  Tier.ZERO, Tier.ZERO, Tier.ZERO,
                 0L, 0L, 0L, 0L, Debt.ZERO, List.of());
     }
 
@@ -63,9 +62,8 @@ public record WalletState(
 
     /** Rebuild the mutable {@link Wallet} aggregate from this state (transient scratchpad for command handling). */
     public Wallet toAggregate() {
-        Wallet w = new Wallet(user);
+        Wallet w = new Wallet(accountNumber);
         w.setId(id);
-        w.setAccountNumber(accountNumber);
         w.setT0(new WalletParameter(t0.balance(), t0.frozen()));
         w.setT1(new WalletParameter(t1.balance(), t1.frozen()));
         w.setT2(new WalletParameter(t2.balance(), t2.frozen()));
@@ -87,13 +85,9 @@ public record WalletState(
 
     /** Capture a mutated {@link Wallet} back into an immutable state. */
     public static WalletState fromAggregate(Wallet w, List<UUID> seenTrackingIds) {
-        long acct = w.getAccountNumber() != null ? w.getAccountNumber()
-                : (w.getUser() != null && w.getUser().getDbsAccountNumber() != null
-                        ? w.getUser().getDbsAccountNumber() : 0L);
         return new WalletState(
                 w.getId(),
-                acct,
-                w.getUser(),
+                w.getAccountNumber(),
                 new Tier(w.getT0().getBalance(), w.getT0().getFrozen()),
                 new Tier(w.getT1().getBalance(), w.getT1().getFrozen()),
                 new Tier(w.getT2().getBalance(), w.getT2().getFrozen()),
@@ -112,7 +106,7 @@ public record WalletState(
 
     /** Copy with a replacement seen-trackingId list (e.g. when reconciling from Rayan). */
     public WalletState withSeenTrackingIds(List<UUID> seen) {
-        return new WalletState(id, accountNumber, user, t0, t1, t2,
+        return new WalletState(id, accountNumber,  t0, t1, t2,
                 credit, initialCredit, separCredit, separInitialCredit, debt, seen);
     }
 }
