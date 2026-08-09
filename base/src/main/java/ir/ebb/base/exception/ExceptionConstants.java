@@ -12,6 +12,7 @@ public enum ExceptionConstants implements BaseExceptionMapper {
     INSUFFICIENT_BALANCE("Insufficient balance", 4005),
     ORDER_VALUE_EXCEEDED_BALANCE("Order value exceeded balance", 4006),
     DUPLICATE_TRACKING_ID("Duplicate tracking id", 4007),
+    INSUFFICIENT_FREEZE("Insufficient freeze", 4008),
     SEPAR_CREDIT_DEBT("exception.separcredit.user.debt", 90007),
     INVALID_COMMAND("exception.invalid.command", 90008),
     ;

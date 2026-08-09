@@ -2,9 +2,9 @@ package ir.ebb.wallet.actor;
 
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.wallet.actor.command.CreateWallet;
-import ir.ebb.wallet.actor.command.FreezeBalance;
-import ir.ebb.wallet.actor.command.WalletCommand;
+import ir.ebb.wallet.actor.command.*;
+import ir.ebb.wallet.actor.event.BalanceDeposited;
+import ir.ebb.wallet.actor.event.Spent;
 import ir.ebb.wallet.actor.event.WalletCreated;
 import ir.ebb.wallet.actor.event.WalletEvent;
 import ir.ebb.wallet.aggregate.WalletAggregate;
@@ -17,9 +17,10 @@ import org.apache.pekko.cluster.sharding.typed.javadsl.Entity;
 import org.apache.pekko.cluster.sharding.typed.javadsl.EntityTypeKey;
 import org.apache.pekko.pattern.StatusReply;
 import org.apache.pekko.persistence.typed.PersistenceId;
-import org.apache.pekko.persistence.typed.javadsl.*;
-
-import java.util.function.BiFunction;
+import org.apache.pekko.persistence.typed.javadsl.CommandHandler;
+import org.apache.pekko.persistence.typed.javadsl.EventHandler;
+import org.apache.pekko.persistence.typed.javadsl.EventSourcedBehavior;
+import org.apache.pekko.persistence.typed.javadsl.ReplyEffect;
 
 public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent, WalletAggregate> {
 
@@ -63,7 +64,9 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
                 });
 
         builder.forNonNullState()
-                .onCommand(FreezeBalance.class, this::handleFreezeCommand)
+                .onCommand(FreezeBalance.class, this::handleCommand)
+                .onCommand(Spend.class, this::handleCommand)
+                .onCommand(DepositBalance.class, this::handleCommand)
                 .onAnyCommand(command -> Effect().none()
                         .thenReply(command.replyTo(), param -> StatusReply.error(new BusinessException(ExceptionConstants.INVALID_COMMAND))));
         return builder.build();
@@ -86,15 +89,15 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
         return builder.build();
     }
 
-    private ReplyEffect<WalletEvent, WalletAggregate> handleFreezeCommand(
+    private ReplyEffect<WalletEvent, WalletAggregate> handleCommand(
             WalletAggregate walletAggregate,
-            FreezeBalance freezeBalance
+            WalletCommand walletCommand
     ) {
-        return walletAggregate.validate(freezeBalance)
-                .map(balanceFrozen -> Effect().persist(balanceFrozen)
-                        .thenReply(freezeBalance.replyTo(), __ -> StatusReply.Ack()))
+        return walletAggregate.validate(walletCommand)
+                .map(walletEvent -> Effect().persist(walletEvent)
+                        .thenReply(walletCommand.replyTo(), __ -> StatusReply.Ack()))
                 .recover(throwable -> Effect().none()
-                        .thenReply(freezeBalance.replyTo(), __ -> StatusReply.error(throwable)))
+                        .thenReply(walletCommand.replyTo(), __ -> StatusReply.error(throwable)))
                 .get();
     }
 }

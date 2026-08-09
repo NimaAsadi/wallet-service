@@ -4,12 +4,8 @@ import io.vavr.control.Try;
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.wallet.actor.command.CreateWallet;
-import ir.ebb.wallet.actor.command.FreezeBalance;
-import ir.ebb.wallet.actor.command.WalletCommand;
-import ir.ebb.wallet.actor.event.BalanceFrozen;
-import ir.ebb.wallet.actor.event.WalletCreated;
-import ir.ebb.wallet.actor.event.WalletEvent;
+import ir.ebb.wallet.actor.command.*;
+import ir.ebb.wallet.actor.event.*;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import ir.ebb.wallet.constant.valueobject.Money;
 import ir.ebb.wallet.constant.valueobject.WalletParameter;
@@ -85,14 +81,26 @@ public class WalletAggregate implements WalletSerializable {
         return Try.of(() -> {
            if (command instanceof FreezeBalance fb)
                return validate(fb);
+           else if (command instanceof Spend spend)
+               return validate(spend);
+           else if (command instanceof DepositBalance depositBalance)
+               return validate(depositBalance);
+           else if (command instanceof UnfreezeBalance unfreezeBalance)
+               return validate(unfreezeBalance);
 
-           throw new BusinessException(ExceptionConstants.INVALID_COMMAND);
+            throw new BusinessException(ExceptionConstants.INVALID_COMMAND);
         });
     }
 
     public WalletAggregate applyEvent(WalletEvent event) {
         if (event instanceof BalanceFrozen bf)
-            return applyEvent(bf);
+            applyEvent(bf);
+        else if (event instanceof Spent spent)
+            applyEvent(spent);
+        else if (event instanceof BalanceDeposited balanceDeposited)
+            applyEvent(balanceDeposited);
+        else if (event instanceof BalanceUnfrozen balanceUnfrozen)
+            applyEvent(balanceUnfrozen);
 
         return this;
     }
@@ -129,10 +137,11 @@ public class WalletAggregate implements WalletSerializable {
         if (bp.sum(command.canSpendSeparCredit()) < command.value().value())
             throw new BusinessException(ExceptionConstants.INSUFFICIENT_BALANCE);
 
-        return new BalanceFrozen(command.value(), command.settlementDelay(), command.walletTransactionType(), command.canSpendSeparCredit());
+        return new BalanceFrozen(command.trackingId(), command.value(), command.settlementDelay(), command.walletTransactionType(), command.canSpendSeparCredit());
     }
 
-    private WalletAggregate applyEvent(BalanceFrozen event) {
+    private void applyEvent(BalanceFrozen event) {
+        trackingIds.add(event.trackingId());
         WalletParameter walletParameter = getWalletParameter(event.settlementDelay());
         long oldFrozen = walletParameter.getFrozen();
         walletParameter.setFrozen(oldFrozen + event.value().value());
@@ -157,8 +166,6 @@ public class WalletAggregate implements WalletSerializable {
                 }
             }
         }
-
-        return this;
     }
 
     private void spendCredit(long currentValue) {
@@ -167,4 +174,125 @@ public class WalletAggregate implements WalletSerializable {
         separCredit -= Math.abs(currentValue - minValue);
     }
 
+    private Spent validate(Spend command) {
+        if (trackingIds.contains(command.trackingId()))
+            throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
+
+        WalletParameter walletParameter = getWalletParameter(command.settlementDelay());
+        Long currentFreeze = walletParameter.getFrozen();
+        if (command.value().value() > currentFreeze)
+            throw new BusinessException(ExceptionConstants.INSUFFICIENT_FREEZE);
+
+        return new Spent(
+                command.trackingId(),
+                command.value(),
+                command.settlementDelay(),
+                command.walletTransactionType(),
+                command.canSpendSeparCredit()
+        );
+    }
+
+    private void applyEvent(Spent event) {
+        trackingIds.add(event.trackingId());
+        WalletParameter walletParameter = getWalletParameter(event.settlementDelay());
+        Long newFrozen = walletParameter.getFrozen() - event.value().value();
+        walletParameter.setFrozen(newFrozen);
+    }
+
+    private BalanceDeposited validate(DepositBalance command) {
+        if (trackingIds.contains(command.trackingId()))
+            throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
+
+        return new BalanceDeposited(command.trackingId(), command.value(), command.settlementDelay(), command.walletTransactionType());
+    }
+
+    private void applyEvent(BalanceDeposited event) {
+        trackingIds.add(event.trackingId());
+        WalletParameter walletParameter = getWalletParameter(event.settlementDelay());
+        Long currentValue = event.value().value();
+
+        long separCreditDiff = separInitialCredit - separCredit;
+        if (separCreditDiff > 0) {
+            if (separCreditDiff >= currentValue) {
+                separCredit += currentValue;
+                return;
+            } else {
+                separCredit += separCreditDiff;
+                currentValue -= separCreditDiff;
+            }
+        }
+
+        long creditDiff = initialCredit - credit;
+        if (creditDiff > 0) {
+            if (creditDiff >= currentValue) {
+                credit += currentValue;
+                return;
+            } else {
+                credit += creditDiff;
+                currentValue -= creditDiff;
+            }
+        }
+
+        settleDebt(event.settlementDelay(), walletParameter, currentValue);
+    }
+
+    private void settleDebt(SettlementDelay settlementDelay, WalletParameter walletParameter, Long currentValue) {
+        switch (settlementDelay) {
+            case T_PLUS_0 -> {
+                Long oldBalance = walletParameter.getBalance();
+                Long newBalance = oldBalance + currentValue;
+                walletParameter.setBalance(newBalance);
+            }
+            case T_PLUS_1 -> {
+                Long debt = walletDebt.calculateDebtSettlement(settlementDelay, SettlementDelay.T_PLUS_0, currentValue);
+                Long oldBalanceT0 = t0.getBalance();
+                long newBalanceT0 = oldBalanceT0 + debt;
+                t0.setBalance(newBalanceT0);
+
+                Long oldBalanceT1 = t1.getBalance();
+                currentValue -= debt;
+                long newBalanceT1 = oldBalanceT1 + currentValue;
+                t1.setBalance(newBalanceT1);
+            }
+            case T_PLUS_2 -> {
+                Long debt = walletDebt.calculateDebtSettlement(settlementDelay, SettlementDelay.T_PLUS_0, currentValue);
+                Long oldBalanceT0 = t0.getBalance();
+                long newBalanceT0 = oldBalanceT0 + debt;
+                t0.setBalance(newBalanceT0);
+
+                currentValue -= debt;
+                debt = walletDebt.calculateDebtSettlement(settlementDelay, SettlementDelay.T_PLUS_1, currentValue);
+                if (debt > 0)
+                    settleDebt(SettlementDelay.T_PLUS_1, t0, debt);
+
+                currentValue -= debt;
+                long newBalanceT2 = t2.getBalance() + currentValue;
+                t2.setBalance(newBalanceT2);
+            }
+        }
+    }
+
+    private BalanceUnfrozen validate(UnfreezeBalance command) {
+        if (trackingIds.contains(command.trackingId()))
+            throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
+
+        WalletParameter walletParameter = getWalletParameter(command.settlementDelay());
+        Long currentFreeze = walletParameter.getFrozen();
+        if (command.value().value() > currentFreeze)
+            throw new BusinessException(ExceptionConstants.INSUFFICIENT_FREEZE);
+
+        return new BalanceUnfrozen(
+                command.trackingId(),
+                command.value(),
+                command.settlementDelay(),
+                command.walletTransactionType(),
+                command.canSpendSeparCredit()
+        );
+    }
+
+    private void applyEvent(BalanceUnfrozen event) {
+        trackingIds.add(event.trackingId());
+        applyEvent(new Spent(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), event.canSpendSeparCredit()));
+        applyEvent(new BalanceDeposited(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType()));
+    }
 }
