@@ -8,10 +8,9 @@ A wallet/ledger microservice for a trading platform (group `ir.ebb`, root projec
 
 Module dependency graph:
 ```
-base ◀── user-info
-base ◀── core        (core also depends on user-info)
+base ◀── core
 core ◀── external
-{core, external, base, user-info} ◀── wallet-app   (wallet-app is the only app/entry point)
+{core, external, base} ◀── wallet-app   (wallet-app is the only app/entry point)
 ```
 
 Dependencies resolve from Maven Central (+ the Gradle Plugin Portal for plugins). The private Nexus URL `nexus.ebidar.net` is present but **commented out** in `settings.gradle` and the root `build.gradle`, so it is not active. Two **internal `ir.ebb` libraries** (`ir.ebb:common`, `ir.ebb.oms:slerlc`) were dropped during the Spring removal and their types **re-homed into the `base` module under the same packages** (`ir.ebb.common.*`, `ir.ebb.oms.*`) as plain POJOs — so 60+ files needed no import changes.
@@ -43,12 +42,11 @@ base        ← foundational infra: ir.ebb.base.jdbc.Jdbc / exceptions / securit
 core        ← wallet domain: event-sourced entity + protocol + projections + read-side repos/query services
   ▲
 external    ← Rayan HTTP gateway integration (Pekko HTTP client + COPY sync)
-user-info   ← user read-model (plain JDBC lookup, NOT event-sourced)
   ▲
 wallet-app  ← the ONLY app; composition root (Main), HTTP/gRPC/cron, infrastructure wiring
 ```
 
-`wallet-app` depends on `core`, `external`, `base`, `user-info`. `.proto` files live in `wallet-app/src/main/proto`; generated sources are added to the `main` sourceSet.
+`wallet-app` depends on `core`, `external`, `base`. `.proto` files live in `wallet-app/src/main/proto`; generated sources are added to the `main` sourceSet.
 
 ## Core Concepts (read multiple files before changing these)
 
@@ -63,10 +61,17 @@ Every wallet is a sharded `EventSourcedBehavior<WalletCommand, WalletEvent, Wall
 - **Tagging**: `tagsFor` → single `WalletTags.TAG` (`"wallet"`); projections consume via **`eventsBySlices`** (1024 slices derived deterministically from the persistence id, split into `NUM_SLICE_RANGES` ranges — see `ProjectionBootstrap`). The slice, not the tag, drives partitioning; the number of ranges can change later without re-tagging.
 - **Idempotency**: duplicate `trackingId` (recently seen, ring of 1024) → `Rejected(4007)`.
 
-The mutable `aggregate/Wallet` cascade (deposit's separ-credit → credit → `settleDebt` waterfall, `freeze`/`applyFreeze` borrowing, `unfreeze`, `spend`, `buyingPower(settlementDelay)`) is **reused verbatim** — it is the single source of money-movement logic, guarded by `WalletAggregateTest`.
+The mutable `aggregate/Wallet` cascade (deposit's separ-credit → credit → `settleDebt` waterfall, `freeze`/`applyFreeze` borrowing, `unfreeze`, `spend`, `buyingPower(settlementDelay)`) is **reused verbatim** — it is the single source of money-movement logic for the live `wallet/` path, guarded by `WalletAggregateTest` (whose name predates the new aggregate below — it exercises this `Wallet` cascade, not `WalletAggregate`).
+
+### 1b. Next-gen aggregate `actor/` (in progress — NOT yet wired into the app)
+`core/.../wallet/actor/` is the intended successor to `core/.../wallet/`, actively built on this branch. **It is not wired into `Main`/`ProjectionBootstrap`** — `Main` still boots `wallet.WalletActor` (`EntityTypeKey("wallet")`). Until the cutover both aggregates coexist; treat `wallet/` as live and `actor/` as the migration target.
+- **Different ES shape — behavior on the aggregate, one event per operation.** `aggregate/WalletAggregate` *is* the event-sourced `State` and holds all logic: `Try<WalletEvent> validate(WalletCommand)` (command → event; throws `BusinessException` for `INVALID_COMMAND`/`DUPLICATE_TRACKING_ID`/`INSUFFICIENT_BALANCE`/`INSUFFICIENT_FREEZE`) and `WalletAggregate applyEvent(WalletEvent)` (mutates `this`, returns it). `actor/WalletActor` is thin: `handleCommand` = `aggregate.validate(cmd).map(e -> Effect().persist(e).thenReply(ack)).recover(t -> ...error(t))`; the event handler just calls `aggregate.applyEvent`. This is the inverse of the legacy actor, which runs the cascade itself and persists a single `WalletMutated`.
+- **Granular delta events** (not absolute state): `WalletCreated`, `Deposited`, `Frozen`, `Unfrozen`, `Spent` — records of `(trackingId, value, settlementDelay, walletTransactionType, canSpendSeparCredit, dbsAccountNumber)`. `BalanceUnfrozen.applyEvent` composes a `Spent` + `Deposited`. Commands mirror them (`CreateWallet(dbsAccountNumber)`, `DepositBalance`, `Freeze`, `Spend`, `Unfreeze`); a stray `Deposit` record exists but is **not wired** into the command handler.
+- **Money model preserved (re-implemented, not shared)**: `t0/t1/t2` `WalletParameter` (balance+frozen per settlement delay), `credit`/`separCredit`/`initialCredit`/`separInitialCredit`, `WalletDebt`, `BuyingPower`; the deposit separ-credit→credit→`settleDebt` waterfall and the freeze lender-borrowing loop are duplicated here. `dbsAccountNumber` is a new field stamped onto every event.
+- **To finish the migration (gap list):** (1) call `actor.WalletActor.initSharding` from `Main` and retire `wallet.WalletActor` (mind the persistence-id namespace); (2) register the new command/event/state records in the Fastjson2 `ManifestRegistry` with new versioned manifests (serializer id `700001` stays immutable); (3) add projection handlers for the new event types — `WalletReadModelProjection` currently only handles `WalletMutated`; (4) **add tests** — nothing yet covers `actor.WalletAggregate`/`actor.WalletActor`.
 
 ### 2. WalletFacade (`core/.../wallet/`) — the entity entry point (writes + single-wallet reads)
-- **ask** (mutations needing confirmation, 10s timeout → `BusinessException(5000)`; `Rejected` → `BusinessException(code)`): `deposit`/`withdraw`/`freeze`/`unfreeze`/`spend`/`freezeForT0`/`spendT0`/`addCredit`/`createWallet`.
+- **ask** (mutations needing confirmation, 10s timeout → `BusinessException(5000)`; `Rejected` → `BusinessException(code)`): `deposit`/`Withdraw`/`freeze`/`unfreeze`/`spend`/`freezeForT0`/`spendT0`/`addCredit`/`createWallet`.
 - **ask** (single-wallet reads, strongly consistent — the entity's in-memory `WalletState` is authoritative; `GetWallet`→`WalletSnapshot`, `GetBuyingPower`→`BuyingPowerResult` computed inside the entity; `WALLET_NOT_EXIST`→`Rejected(4001)`): `getWallet`/`getBuyingPower`. Used by the read-your-wallet flows (user HTTP `GET /v1/user/wallet`, bridge REST `GET /v1/bridge/wallet/account-number/{acct}`, bridge gRPC `getWallet`/`getBuyingPower`).
 - **tell** (fire-and-forget fan-out): `reconcileFromRayan`, `seedFromLegacy`. (`chargeSeparCredits` / `settleSeparCredits` exist as **commented-out** batch helpers in `WalletFacade`; the `ChargeSeparCredit` / `SettleSeparCredit` commands still exist in the protocol and are handled by the actor, but the facade doesn't fan them out today.)
 - **bulk/list reads stay on the projection**: `WalletQueryService`/`WalletRepository` still serve `findAll`, `getSeparCreditDebtorUsers`, transaction/turnover/credit-history, and the admin credit-history + turnover-cron wallet lookups (they need SQL and can't be served one-entity-per-account).
@@ -98,5 +103,5 @@ Three JWT audiences (Pekko HTTP directives + nimbus): User (`/v1/user/**`), Admi
 - **DTO layering**: each audience has its own `dto/request` + `dto/response` + `transformer` packages. Never leak entities/aggregates to controllers. `ResponseHelper` wraps `BaseResponse<T>` only; `PaginatedResponseDTO<T>` is constructed directly inside the web services (not via `ResponseHelper`).
 - **Persistence**: schema changes go in a new Liquibase changeset under `wallet-app/src/main/resources/db/changelog/changesets/` (versioned `V00X__description.xml`), included from `db.changelog-master.xml`. The R2DBC journal/snapshot/projection tables live in the `pekko` schema, created by `V005__pekko_r2dbc.xml` (Postgres DDL from the plugin docs). The legacy `pekko-persistence-jdbc` tables (`V003`, `public` schema) are dropped post-cutover by `V006__drop_jdbc_persistence.xml`. `Money` wraps `Long` (rials — integer longs, no decimals).
 - **credit_history** is a direct-write audit (admin metadata not in events); **turnover** is currently a direct write (not yet projection-fed).
-- **What's gone**: `actor/` package, `WalletCommandService(+Impl)`, `WalletRepository` writes, `OptimisticLockingFailureException`, `spendAndTransfer`/`TRANSFER` — do not reintroduce them. Also gone from persistence: `pekko-persistence-jdbc`, Slick, `JdbcProjection`/`JdbcHandler`/`JdbcSession`, `HikariJdbcSession`, the `eventsByTag` 16-tag scheme (`WalletTags` now holds a single tag for `eventsBySlices`), and the one-off `pekko-persistence-r2dbc-migration` tooling (removed after the JDBC→R2DBC cutover).
+- **What's gone**: `WalletCommandService(+Impl)`, `WalletRepository` writes, `OptimisticLockingFailureException`, `spendAndTransfer`/`TRANSFER` — do not reintroduce them. Also gone from persistence: `pekko-persistence-jdbc`, Slick, `JdbcProjection`/`JdbcHandler`/`JdbcSession`, `HikariJdbcSession`, the `eventsByTag` 16-tag scheme (`WalletTags` now holds a single tag for `eventsBySlices`), and the one-off `pekko-persistence-r2dbc-migration` tooling (removed after the JDBC→R2DBC cutover).
 - Prefer **fire-and-forget `tell`** over `ask` where a reply isn't required; immutable messages; no shared mutable state.

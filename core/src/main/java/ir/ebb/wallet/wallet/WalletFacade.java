@@ -3,7 +3,7 @@ package ir.ebb.wallet.wallet;
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.wallet.aggregate.Wallet;
+import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import lombok.extern.slf4j.Slf4j;

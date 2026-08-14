@@ -1,7 +1,7 @@
 package ir.ebb.wallet.app.user.transformer;
 
 import ir.ebb.wallet.app.user.dto.response.WalletResponseDTO;
-import ir.ebb.wallet.aggregate.Wallet;
+import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.entity.WalletEntity;
 
 public final class WalletTransformer {

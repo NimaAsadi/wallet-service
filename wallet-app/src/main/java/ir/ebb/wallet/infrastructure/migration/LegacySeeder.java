@@ -1,6 +1,6 @@
 package ir.ebb.wallet.infrastructure.migration;
 
-import ir.ebb.wallet.aggregate.Wallet;
+import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.entity.WalletEntity;
 import ir.ebb.wallet.repository.WalletRepository;
 import ir.ebb.wallet.wallet.WalletFacade;

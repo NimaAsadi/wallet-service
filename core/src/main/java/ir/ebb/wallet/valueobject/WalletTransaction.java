@@ -1,6 +1,5 @@
-package ir.ebb.wallet.aggregate;
+package ir.ebb.wallet.valueobject;
 
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.WalletOperationType;
 import ir.ebb.wallet.constant.enumeration.WalletParameterType;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;

@@ -9,6 +9,7 @@ import ir.ebb.wallet.actor.event.*;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import ir.ebb.wallet.constant.valueobject.Money;
 import ir.ebb.wallet.constant.valueobject.WalletParameter;
+import ir.ebb.wallet.valueobject.WalletDebt;
 import ir.ebb.wallet.wallet.WalletSerializable;
 
 import java.util.HashSet;
@@ -79,29 +80,32 @@ public class WalletAggregate implements WalletSerializable {
 
     public Try<WalletEvent> validate(WalletCommand command) {
         return Try.of(() -> {
-           if (command instanceof FreezeBalance fb)
-               return validate(fb);
+           if (command instanceof Freeze freeze)
+               return validate(freeze);
            else if (command instanceof Spend spend)
                return validate(spend);
-           else if (command instanceof DepositBalance depositBalance)
-               return validate(depositBalance);
-           else if (command instanceof UnfreezeBalance unfreezeBalance)
-               return validate(unfreezeBalance);
+           else if (command instanceof Deposit deposit)
+               return validate(deposit);
+           else if (command instanceof Unfreeze unfreeze)
+               return validate(unfreeze);
+           else if (command instanceof Withdraw withdraw)
+               return validate(withdraw);
 
             throw new BusinessException(ExceptionConstants.INVALID_COMMAND);
         });
     }
 
     public WalletAggregate applyEvent(WalletEvent event) {
-        if (event instanceof BalanceFrozen bf)
-            applyEvent(bf);
+        if (event instanceof Frozen frozen)
+            applyEvent(frozen);
         else if (event instanceof Spent spent)
             applyEvent(spent);
-        else if (event instanceof BalanceDeposited balanceDeposited)
-            applyEvent(balanceDeposited);
-        else if (event instanceof BalanceUnfrozen balanceUnfrozen)
-            applyEvent(balanceUnfrozen);
-
+        else if (event instanceof Deposited deposited)
+            applyEvent(deposited);
+        else if (event instanceof Unfrozen unfrozen)
+            applyEvent(unfrozen);
+        else if (event instanceof Withdrew withdrew)
+            applyEvent(withdrew);
         return this;
     }
 
@@ -129,7 +133,7 @@ public class WalletAggregate implements WalletSerializable {
         };
     }
 
-    private BalanceFrozen validate(FreezeBalance command) {
+    private Frozen validate(Freeze command) {
         if (trackingIds.contains(command.trackingId()))
             throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
 
@@ -137,10 +141,10 @@ public class WalletAggregate implements WalletSerializable {
         if (bp.sum(command.canSpendSeparCredit()) < command.value().value())
             throw new BusinessException(ExceptionConstants.INSUFFICIENT_BALANCE);
 
-        return new BalanceFrozen(command.trackingId(), command.value(), command.settlementDelay(), command.walletTransactionType(), command.canSpendSeparCredit(), this.dbsAccountNumber);
+        return new Frozen(command.trackingId(), command.value(), command.settlementDelay(), command.walletTransactionType(), command.canSpendSeparCredit(), this.dbsAccountNumber);
     }
 
-    private void applyEvent(BalanceFrozen event) {
+    private void applyEvent(Frozen event) {
         trackingIds.add(event.trackingId());
         WalletParameter walletParameter = getWalletParameter(event.settlementDelay());
         long oldFrozen = walletParameter.getFrozen();
@@ -200,11 +204,11 @@ public class WalletAggregate implements WalletSerializable {
         walletParameter.setFrozen(newFrozen);
     }
 
-    private BalanceDeposited validate(DepositBalance command) {
+    private Deposited validate(Deposit command) {
         if (trackingIds.contains(command.trackingId()))
             throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
 
-        return new BalanceDeposited(
+        return new Deposited(
                 command.trackingId(),
                 command.value(),
                 command.settlementDelay(),
@@ -213,7 +217,7 @@ public class WalletAggregate implements WalletSerializable {
         );
     }
 
-    private void applyEvent(BalanceDeposited event) {
+    private void applyEvent(Deposited event) {
         trackingIds.add(event.trackingId());
         WalletParameter walletParameter = getWalletParameter(event.settlementDelay());
         Long currentValue = event.value().value();
@@ -279,7 +283,7 @@ public class WalletAggregate implements WalletSerializable {
         }
     }
 
-    private BalanceUnfrozen validate(UnfreezeBalance command) {
+    private Unfrozen validate(Unfreeze command) {
         if (trackingIds.contains(command.trackingId()))
             throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
 
@@ -288,7 +292,7 @@ public class WalletAggregate implements WalletSerializable {
         if (command.value().value() > currentFreeze)
             throw new BusinessException(ExceptionConstants.INSUFFICIENT_FREEZE);
 
-        return new BalanceUnfrozen(
+        return new Unfrozen(
                 command.trackingId(),
                 command.value(),
                 command.settlementDelay(),
@@ -298,9 +302,34 @@ public class WalletAggregate implements WalletSerializable {
         );
     }
 
-    private void applyEvent(BalanceUnfrozen event) {
+    private void applyEvent(Unfrozen event) {
         trackingIds.add(event.trackingId());
         applyEvent(new Spent(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), event.canSpendSeparCredit(), this.dbsAccountNumber));
-        applyEvent(new BalanceDeposited(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), this.dbsAccountNumber));
+        applyEvent(new Deposited(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), this.dbsAccountNumber));
+    }
+
+    private Withdrew validate(Withdraw command) {
+        if (trackingIds.contains(command.trackingId()))
+            throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
+
+        WalletParameter walletParameter = getWalletParameter(command.settlementDelay());
+        Long balance = walletParameter.getBalance();
+        if (command.value().value() > balance)
+            throw new BusinessException(ExceptionConstants.INSUFFICIENT_FREEZE);
+
+        return new Withdrew(
+                command.trackingId(),
+                command.value(),
+                command.settlementDelay(),
+                command.walletTransactionType(),
+                this.dbsAccountNumber
+        );
+    }
+
+    private void applyEvent(Withdrew event) {
+        trackingIds.add(event.trackingId());
+        WalletParameter walletParameter = getWalletParameter(event.settlementDelay());
+        Long newBalance = walletParameter.getBalance() - event.value().value();
+        walletParameter.setBalance(newBalance);
     }
 }

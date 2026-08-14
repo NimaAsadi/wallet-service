@@ -9,10 +9,11 @@ import org.apache.pekko.pattern.StatusReply;
 
 import java.util.UUID;
 
-public record Spend(UUID trackingId,
+public record Deposit(
+        UUID trackingId,
         Money value,
         SettlementDelay settlementDelay,
         WalletTransactionType walletTransactionType,
-        boolean canSpendSeparCredit,
-        ActorRef<StatusReply<Done>> replyTo) implements WalletCommand {
+        ActorRef<StatusReply<Done>> replyTo
+) implements WalletCommand {
 }

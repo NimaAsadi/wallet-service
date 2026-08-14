@@ -1,6 +1,6 @@
 package ir.ebb.wallet.wallet;
 
-import ir.ebb.wallet.aggregate.WalletTransaction;
+import ir.ebb.wallet.valueobject.WalletTransaction;
 import org.apache.pekko.Done;
 import org.apache.pekko.persistence.query.typed.EventEnvelope;
 import org.apache.pekko.projection.r2dbc.javadsl.R2dbcHandler;

@@ -4,7 +4,7 @@ import ir.ebb.common.exception.handler.ApplicationException;
 import ir.ebb.external.rayan.wallet.dto.RayanWalletDTO;
 import ir.ebb.external.rayan.wallet.service.command.RayanWalletCommandService;
 import ir.ebb.external.rayan.wallet.service.command.RayanWalletHistoryCommandService;
-import ir.ebb.wallet.aggregate.Wallet;
+import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.app.admin.transformer.WalletTransformer;
 import ir.ebb.wallet.constant.enumeration.TurnoverOperationType;
 import ir.ebb.wallet.entity.TurnoverEntity;

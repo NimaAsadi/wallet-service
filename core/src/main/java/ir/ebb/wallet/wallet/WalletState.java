@@ -1,8 +1,7 @@
 package ir.ebb.wallet.wallet;
 
-import ir.ebb.common.model.user.User;
-import ir.ebb.wallet.aggregate.Wallet;
-import ir.ebb.wallet.aggregate.WalletDebt;
+import ir.ebb.wallet.valueobject.Wallet;
+import ir.ebb.wallet.valueobject.WalletDebt;
 import ir.ebb.wallet.constant.valueobject.WalletParameter;
 
 import java.util.List;

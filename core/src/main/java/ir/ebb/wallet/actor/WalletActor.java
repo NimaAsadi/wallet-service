@@ -3,8 +3,6 @@ package ir.ebb.wallet.actor;
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.exception.handler.BusinessException;
 import ir.ebb.wallet.actor.command.*;
-import ir.ebb.wallet.actor.event.BalanceDeposited;
-import ir.ebb.wallet.actor.event.Spent;
 import ir.ebb.wallet.actor.event.WalletCreated;
 import ir.ebb.wallet.actor.event.WalletEvent;
 import ir.ebb.wallet.aggregate.WalletAggregate;
@@ -64,9 +62,11 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
                 });
 
         builder.forNonNullState()
-                .onCommand(FreezeBalance.class, this::handleCommand)
+                .onCommand(Freeze.class, this::handleCommand)
                 .onCommand(Spend.class, this::handleCommand)
-                .onCommand(DepositBalance.class, this::handleCommand)
+                .onCommand(Deposit.class, this::handleCommand)
+                .onCommand(Unfreeze.class,this::handleCommand)
+                .onCommand(Withdraw.class,this::handleCommand)
                 .onAnyCommand(command -> Effect().none()
                         .thenReply(command.replyTo(), param -> StatusReply.error(new BusinessException(ExceptionConstants.INVALID_COMMAND))));
         return builder.build();

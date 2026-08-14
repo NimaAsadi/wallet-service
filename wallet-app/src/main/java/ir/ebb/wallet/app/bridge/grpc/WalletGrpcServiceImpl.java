@@ -3,7 +3,7 @@ package ir.ebb.wallet.app.bridge.grpc;
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.wallet.aggregate.Wallet;
+import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import ir.ebb.wallet.grpc.BuyingPowerResponse;
 import ir.ebb.wallet.grpc.GetBuyingPowerRequest;

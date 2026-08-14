@@ -4,7 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.model.user.User;
-import ir.ebb.wallet.aggregate.WalletTransaction;
+import ir.ebb.wallet.valueobject.WalletTransaction;
 import ir.ebb.wallet.constant.enumeration.WalletOperationType;
 import ir.ebb.wallet.constant.enumeration.WalletParameterType;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;

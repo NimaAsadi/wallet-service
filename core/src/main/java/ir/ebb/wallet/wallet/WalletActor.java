@@ -1,23 +1,19 @@
 package ir.ebb.wallet.wallet;
 
-import io.vavr.control.Try;
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.ApplicationException;
 import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.wallet.aggregate.Wallet;
-import ir.ebb.wallet.aggregate.WalletAggregate;
-import ir.ebb.wallet.aggregate.WalletTransaction;
+import ir.ebb.wallet.valueobject.Wallet;
+import ir.ebb.wallet.valueobject.WalletTransaction;
 import ir.ebb.wallet.constant.valueobject.Money;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pekko.Done;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.SupervisorStrategy;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.cluster.sharding.typed.javadsl.EntityContext;
 import org.apache.pekko.cluster.sharding.typed.javadsl.EntityTypeKey;
-import org.apache.pekko.pattern.StatusReply;
 import org.apache.pekko.persistence.typed.PersistenceId;
 import org.apache.pekko.persistence.typed.javadsl.CommandHandler;
 import org.apache.pekko.persistence.typed.javadsl.Effect;

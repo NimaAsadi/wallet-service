@@ -1,4 +1,4 @@
-package ir.ebb.wallet.aggregate;
+package ir.ebb.wallet.valueobject;
 
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;

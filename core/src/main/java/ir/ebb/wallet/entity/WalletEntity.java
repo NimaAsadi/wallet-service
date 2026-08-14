@@ -2,8 +2,7 @@ package ir.ebb.wallet.entity;
 
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.model.base.BaseEntityById;
-import ir.ebb.common.model.user.User;
-import ir.ebb.wallet.aggregate.Wallet;
+import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import lombok.AllArgsConstructor;
 import lombok.Data;

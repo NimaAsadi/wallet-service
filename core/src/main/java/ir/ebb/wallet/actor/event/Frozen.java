@@ -6,7 +6,7 @@ import ir.ebb.wallet.constant.valueobject.Money;
 
 import java.util.UUID;
 
-public record BalanceFrozen(
+public record Frozen(
         UUID trackingId,
         Money value,
         SettlementDelay settlementDelay,

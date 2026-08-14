@@ -9,7 +9,7 @@ import org.apache.pekko.pattern.StatusReply;
 
 import java.util.UUID;
 
-public record UnfreezeBalance(
+public record Freeze(
         UUID trackingId,
         Money value,
         SettlementDelay settlementDelay,

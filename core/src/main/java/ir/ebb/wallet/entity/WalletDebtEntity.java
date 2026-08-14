@@ -1,7 +1,7 @@
 package ir.ebb.wallet.entity;
 
 import ir.ebb.common.model.base.BaseEntity;
-import ir.ebb.wallet.aggregate.WalletDebt;
+import ir.ebb.wallet.valueobject.WalletDebt;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

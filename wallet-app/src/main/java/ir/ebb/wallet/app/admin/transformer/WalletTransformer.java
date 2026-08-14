@@ -4,7 +4,7 @@ import ir.ebb.wallet.app.admin.dto.request.WalletSearchRequestDTO;
 import ir.ebb.wallet.app.admin.dto.response.RayanWalletResponseDTO;
 import ir.ebb.wallet.app.admin.dto.response.WalletResponseDTO;
 import ir.ebb.external.rayan.wallet.dto.RayanWalletDTO;
-import ir.ebb.wallet.aggregate.Wallet;
+import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.constant.valueobject.WalletParameter;
 import ir.ebb.wallet.dto.WalletSpecificationDTO;
 import ir.ebb.wallet.entity.WalletEntity;

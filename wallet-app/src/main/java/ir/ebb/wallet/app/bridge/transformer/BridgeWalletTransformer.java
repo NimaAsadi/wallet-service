@@ -1,7 +1,7 @@
 package ir.ebb.wallet.app.bridge.transformer;
 
 import ir.ebb.wallet.app.bridge.dto.response.BridgeWalletResponseDTO;
-import ir.ebb.wallet.aggregate.Wallet;
+import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.entity.WalletEntity;
 
 public final class BridgeWalletTransformer {
