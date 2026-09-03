@@ -24,7 +24,7 @@ class WalletAggregateTest {
     private static final WalletTransactionType TYPE = WalletTransactionType.BANK_GATEWAY;
 
     private final UUID tracking = UUID.randomUUID();
-    private final Wallet wallet = new Wallet(User.of(UUID.randomUUID(), 123L));
+    private final Wallet wallet = new Wallet(123L);
 
     @Test
     void depositT0_increasesBalanceAndBuyingPower() throws Exception {

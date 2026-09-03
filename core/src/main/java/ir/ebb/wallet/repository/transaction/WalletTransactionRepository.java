@@ -26,11 +26,11 @@ public class WalletTransactionRepository {
             """;
 
     private static final String INSERT = """
-            INSERT INTO wallet_transaction (id, version, user_id, account_number, wallet_id,
+            INSERT INTO wallet_transaction (id, version, account_number, wallet_id,
                 wallet_operation_type, wallet_transaction_type, wallet_parameter_type,
                 amount, tracking_id, frozen_before, frozen_after, balance_before, balance_after,
                 created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
             """;
 
     private final DataSource dataSource;
@@ -39,7 +39,7 @@ public class WalletTransactionRepository {
         WalletTransactionEntity e = new WalletTransactionEntity();
         e.setId(Jdbc.getUuid(rs, "id"));
         e.setVersion(rs.getLong("version"));
-        e.setUser(User.of(Jdbc.getUuid(rs, "user_id"), Jdbc.getLong(rs, "account_number")));
+        e.setAccountNumber(Jdbc.getLong(rs, "account_number"));
         e.setWalletId(Jdbc.getUuid(rs, "wallet_id"));
         e.setWalletOperationType(enumOrNull(rs.getString("wallet_operation_type"),
                 ir.ebb.wallet.constant.enumeration.WalletOperationType.class));
@@ -78,7 +78,7 @@ public class WalletTransactionRepository {
         for (WalletTransactionEntity e : txs) {
             Jdbc.update(conn, INSERT,
                     e.getId(), e.getVersion(),
-                    e.getUser().getKeycloakId(), e.getUser().getDbsAccountNumber(),
+                    e.getAccountNumber(),
                     e.getWalletId(),
                     e.getWalletOperationType(), e.getWalletTransactionType(), e.getWalletParameterType(),
                     e.getAmount(), e.getTrackingId(),

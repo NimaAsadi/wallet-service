@@ -54,11 +54,10 @@ public class RayanWalletJobServiceImpl implements RayanWalletJobService {
         List<TurnoverEntity> turnovers = Collections.synchronizedList(new ArrayList<>());
 
         wallets.parallelStream().forEach(wallet -> {
-            Long accountNumber = wallet.getUser().getDbsAccountNumber();
+            Long accountNumber = wallet.getAccountNumber();
             RayanWalletDTO rayanWallet = allRayanWallets.get(accountNumber);
             if (ObjectUtils.isEmpty(rayanWallet)) {
-                log.atError().log("Rayan wallet not found for account={} userId={}",
-                        accountNumber, wallet.getUser().getKeycloakId());
+                log.atError().log("Rayan wallet not found for account={}", accountNumber);
                 return;
             }
             WalletTransformer.adapt(wallet, rayanWallet);
@@ -66,7 +65,7 @@ public class RayanWalletJobServiceImpl implements RayanWalletJobService {
             // (fire-and-forget tell; the entity applies WalletMutated on top of its current state).
             walletFacade.reconcileFromRayan(WalletState.fromAggregate(wallet, List.of()));
             turnovers.add(new TurnoverEntity(
-                    wallet.getUser(), wallet.getId(),
+                    null, wallet.getId(),
                     TurnoverOperationType.REMAINING,
                     wallet.getTotalAsset(), wallet.getId()));
         });

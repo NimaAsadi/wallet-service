@@ -35,8 +35,8 @@ public final class WalletTransformer {
 
     public static WalletResponseDTO adapt(WalletEntity e) {
         return WalletResponseDTO.builder()
-                .userId(e.getUser().getKeycloakId())
-                .dbsAccountNumber(e.getUser().getDbsAccountNumber())
+                .userId(null)
+                .dbsAccountNumber(e.getAccountNumber())
                 .t0Balance(e.getT0().getBalance())
                 .t0BuyingPower(e.getT0().getBalance())
                 .t1Balance(e.getT1().getBalance())

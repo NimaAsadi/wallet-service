@@ -42,7 +42,6 @@ import ir.ebb.wallet.app.web.GrpcServer;
 import ir.ebb.wallet.app.web.JwtVerifier;
 import ir.ebb.wallet.app.web.WalletHttpServer;
 import ir.ebb.wallet.app.web.WalletJobs;
-import ir.ebb.wallet.infrastructure.projection.ProjectionBootstrap;
 import ir.ebb.wallet.infrastructure.migration.LegacySeeder;
 import ir.ebb.wallet.repository.WalletRepository;
 import ir.ebb.wallet.repository.credit.CreditHistoryRepository;
@@ -60,9 +59,6 @@ import ir.ebb.wallet.service.turnover.query.TurnoverQueryService;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryServiceImpl;
 import ir.ebb.wallet.wallet.WalletActor;
 import ir.ebb.wallet.wallet.WalletFacade;
-import ir.ebb.userinfo.repository.UserRepository;
-import ir.ebb.userinfo.service.query.UserQueryService;
-import ir.ebb.userinfo.service.query.UserQueryServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pekko.actor.typed.ActorSystem;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
@@ -79,7 +75,7 @@ import javax.sql.DataSource;
  * Composition root replacing Spring DI + the legacy actor-registry root. Wires
  * dependencies explicitly: config → HikariCP → Liquibase → JDBC repos → domain services →
  * Pekko {@link ActorSystem} (cluster guardian) → Cluster Bootstrap + {@link ClusterSharding}
- * (the {@link WalletActor}) + {@link ProjectionBootstrap} → {@link WalletFacade} → Rayan →
+ * (the {@link WalletActor})  → {@link WalletFacade} → Rayan →
  * web services → HTTP/gRPC servers → cron jobs, then blocks on ActorSystem termination. A JVM
  * shutdown hook tears everything down in reverse.
  *
@@ -108,7 +104,6 @@ public class Main {
         WalletTransactionRepository walletTransactionRepository = new WalletTransactionRepository(dataSource);
         CreditHistoryRepository creditHistoryRepository = new CreditHistoryRepository(dataSource);
         TurnoverRepository turnoverRepository = new TurnoverRepository(dataSource);
-        UserRepository userRepository = new UserRepository(dataSource);
         ir.ebb.external.rayan.wallet.repository.RayanWalletRepository rayanWalletRepository =
                 new ir.ebb.external.rayan.wallet.repository.RayanWalletRepository(dataSource);
         ir.ebb.external.rayan.wallet.repository.RayanWalletHistoryRepository rayanWalletHistoryRepository =
@@ -120,7 +115,6 @@ public class Main {
         TurnoverCommandService turnoverCommandService = new TurnoverCommandServiceImpl(turnoverRepository);
         CreditHistoryQueryService creditHistoryQueryService = new CreditHistoryQueryServiceImpl(creditHistoryRepository);
         WalletTransactionQueryService walletTransactionQueryService = new WalletTransactionQueryServiceImpl(walletTransactionRepository);
-        UserQueryService userQueryService = new UserQueryServiceImpl(userRepository);
 
         // 4. actor system (cluster guardian root; no actor registry)
         ActorSystem<String> actorSystem =
@@ -138,10 +132,6 @@ public class Main {
         KafkaWalletProducer kafkaWalletProducer = new KafkaWalletProducer(
                 config.getString("wallet.kafka.bootstrap-servers"), objectMapper);
         String walletStateTopic = config.getString("wallet.kafka.topic.wallet-state");
-
-        // 7. read-model + Kafka projections (CQRS; eventsBySlices via ShardedDaemonProcess, R2DBC)
-        new ProjectionBootstrap(actorSystem, kafkaWalletProducer, walletStateTopic).start();
-        log.info("Wallet read-model + Kafka projections started");
 
         // 8. write-side facade over the sharded, event-sourced WalletEntity
         WalletFacade walletFacade = new WalletFacade(actorSystem);
@@ -178,7 +168,7 @@ public class Main {
         boolean activeCredit = config.getBoolean("wallet.credit.active");
         AdminWalletWebService adminWalletWebService = new AdminWalletWebServiceImpl(
                 walletFacade, walletQueryService, rayanWalletQueryService, rayanWalletCommandService,
-                creditHistoryQueryService, creditHistoryRepository, userQueryService, activeCredit);
+                creditHistoryQueryService, creditHistoryRepository, activeCredit);
         AdminWalletTransactionWebService adminWalletTransactionWebService =
                 new AdminWalletTransactionWebServiceImpl(walletTransactionQueryService);
         TurnoverNotifyWebService turnoverNotifyWebService = new TurnoverNotifyWebServiceImpl(

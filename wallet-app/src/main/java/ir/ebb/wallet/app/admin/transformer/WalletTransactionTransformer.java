@@ -21,7 +21,7 @@ public final class WalletTransactionTransformer {
     public static WalletTransactionResponseDTO adapt(WalletTransactionEntity e) {
         return new WalletTransactionResponseDTO(
                 e.getWalletTransactionType(),
-                e.getUser(),
+                null,
                 e.getWalletOperationType(),
                 e.getWalletParameterType(),
                 e.getAmount()

@@ -95,7 +95,6 @@ class FastJsonSerializerIntegrationTest {
         // the application.conf wiring (serializer id + manifest + class) resolves and holds.
         WalletState state = new WalletState(
                 UUID.randomUUID(), 7L,
-                User.of(UUID.randomUUID(), 7L),
                 new WalletState.Tier(10L, 0L),
                 new WalletState.Tier(0L, 0L),
                 new WalletState.Tier(0L, 0L),

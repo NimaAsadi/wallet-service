@@ -59,7 +59,6 @@ class FastJsonSerializerTest {
     private WalletState sampleState() {
         return new WalletState(
                 UUID.randomUUID(), 999L,
-                User.of(UUID.randomUUID(), 999L),
                 new WalletState.Tier(100L, 20L),
                 new WalletState.Tier(50L, 0L),
                 new WalletState.Tier(0L, 0L),
@@ -70,7 +69,7 @@ class FastJsonSerializerTest {
 
     private WalletTransaction leg() {
         return WalletTransaction.builder()
-                .user(User.of(UUID.randomUUID(), 999L))
+                .accountNumber(999L)
                 .walletId(UUID.randomUUID())
                 .walletOperationType(WalletOperationType.DEPOSIT)
                 .walletTransactionType(WalletTransactionType.BANK_GATEWAY)

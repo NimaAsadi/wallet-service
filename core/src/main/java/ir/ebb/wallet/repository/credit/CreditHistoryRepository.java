@@ -3,9 +3,6 @@ package ir.ebb.wallet.repository.credit;
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
 import ir.ebb.base.jdbc.Jdbc;
-import ir.ebb.common.model.user.User;
-import ir.ebb.userinfo.entity.UserEntity;
-import ir.ebb.wallet.constant.enumeration.RayanCreditStatus;
 import ir.ebb.wallet.dto.CreditSpecificationDTO;
 import ir.ebb.wallet.entity.CreditHistoryEntity;
 import lombok.RequiredArgsConstructor;
@@ -27,15 +24,15 @@ public class CreditHistoryRepository {
             """;
 
     private static final String INSERT = """
-            INSERT INTO credit_history (id, version, user_id, account_number, amount, status,
+            INSERT INTO credit_history (id, version, account_number, amount, status,
                 created_id, created_by, error_message, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, now(), now())
             """;
 
     private final DataSource dataSource;
 
     private static final Jdbc.RowMapper<CreditHistoryEntity> MAPPER = rs -> {
-        UserEntity user = new UserEntity();
+        /*UserEntity user = new UserEntity();
         user.setUser(User.of(Jdbc.getUuid(rs, "user_id"), Jdbc.getLong(rs, "account_number")));
         user.setNationalCode(rs.getString("national_code"));
         user.setFullName(rs.getString("full_name"));
@@ -52,8 +49,8 @@ public class CreditHistoryRepository {
         e.setCreatedBy(rs.getString("created_by"));
         e.setErrorMessage(rs.getString("error_message"));
         e.setCreatedAt(Jdbc.getDateTime(rs, "created_at"));
-        e.setUpdatedAt(Jdbc.getDateTime(rs, "updated_at"));
-        return e;
+        e.setUpdatedAt(Jdbc.getDateTime(rs, "updated_at"));*/
+        return null;
     };
 
     public Page<CreditHistoryEntity> findAll(CreditSpecificationDTO spec, PageRequest pr) {
@@ -74,7 +71,7 @@ public class CreditHistoryRepository {
     public void save(Connection conn, CreditHistoryEntity e) {
         Jdbc.update(conn, INSERT,
                 e.getId(), e.getVersion(),
-                e.getUser().getUser().getKeycloakId(), e.getUser().getUser().getDbsAccountNumber(),
+                e.getAccountNumber(),
                 e.getAmount(), e.getStatus(),
                 e.getCreatedId(), e.getCreatedBy(), e.getErrorMessage());
     }

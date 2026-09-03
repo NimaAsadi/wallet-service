@@ -59,7 +59,7 @@ public class TurnoverCommandServiceImpl implements TurnoverCommandService {
                 + walletEntity.getT2().getBalance();
         turnoverRepository.save(
                 new TurnoverEntity(
-                        walletEntity.getUser(),
+                        null,
                         walletEntity.getId(),
                         TurnoverOperationType.REMAINING,
                         remaining,

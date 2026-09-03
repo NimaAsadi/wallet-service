@@ -26,7 +26,8 @@ public final class CreditHistoryTransformer {
         Long createdAt = e.getCreatedAt() != null
                 ? e.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli()
                 : null;
-        return new CreditHistoryResponseDTO(
+        return null;
+        /*return new CreditHistoryResponseDTO(
                 e.getId(),
                 createdAt,
                 e.getCreatedBy(),
@@ -38,6 +39,6 @@ public final class CreditHistoryTransformer {
                 e.getStatus(),
                 e.getStatus().name(),
                 e.getErrorMessage()
-        );
+        );*/
     }
 }

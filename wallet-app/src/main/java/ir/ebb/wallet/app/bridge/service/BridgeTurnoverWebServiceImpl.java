@@ -25,7 +25,7 @@ public class BridgeTurnoverWebServiceImpl implements BridgeTurnoverWebService {
     public List<BridgeTurnoverResponseDTO> getTodayTurnover(Long accountNumber) {
         WalletEntity wallet = walletQueryService.getWalletEntity(accountNumber);
         return BridgeTurnoverTransformer.adaptList(
-                turnoverQueryService.getTodayTurnoverByUser(wallet.getUser()));
+                turnoverQueryService.getTodayTurnoverByUser(null));
     }
 
     @Override
@@ -39,7 +39,7 @@ public class BridgeTurnoverWebServiceImpl implements BridgeTurnoverWebService {
                 : LocalDate.now().plusDays(1).atStartOfDay();
 
         TurnoverSpecificationDTO spec = TurnoverSpecificationDTO.builder()
-                .user(wallet.getUser())
+                .user(null)
                 .fromCreatedAt(from)
                 .toCreatedAt(to)
                 .build();
