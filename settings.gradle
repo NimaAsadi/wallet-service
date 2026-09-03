@@ -92,6 +92,10 @@ dependencyResolutionManagement {
             library('protobuf', 'com.google.protobuf', 'protobuf-java').version('4.33.0')
             library('vavr', 'io.vavr', 'vavr').version('1.0.1')
 
+            // JavaPoet (Palantir fork — NOT the squareup artifact) backing the
+            // @GenerateRepository annotation processor in base.
+            library('javapoet', 'com.palantir.javapoet', 'javapoet').version('0.7.0')
+
             // ── Test ───────────────────────────────────────────────────────────────
             version('junit', '5.10.3')
             library('junitJupiter', 'org.junit.jupiter', 'junit-jupiter').versionRef('junit')
