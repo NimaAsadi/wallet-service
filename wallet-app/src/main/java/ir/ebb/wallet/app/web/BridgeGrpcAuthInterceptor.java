@@ -6,12 +6,17 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import ir.ebb.base.security.UserPrincipal;
+import ir.ebb.wallet.app.di.BridgeJwtVerifier;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Replaces net.devh's {@code @GrpcGlobalServerInterceptor}. Enforces a bridge
  * Keycloak Bearer token on every gRPC call using the same {@link JwtVerifier}
  * as the REST bridge audience.
  */
+@Singleton
 public class BridgeGrpcAuthInterceptor implements ServerInterceptor {
 
     public static final Metadata.Key<String> AUTHORIZATION =
@@ -19,7 +24,8 @@ public class BridgeGrpcAuthInterceptor implements ServerInterceptor {
 
     private final JwtVerifier bridgeVerifier;
 
-    public BridgeGrpcAuthInterceptor(JwtVerifier bridgeVerifier) {
+    @Inject
+    public BridgeGrpcAuthInterceptor(@BridgeJwtVerifier JwtVerifier bridgeVerifier) {
         this.bridgeVerifier = bridgeVerifier;
     }
 

@@ -8,13 +8,16 @@ import ir.ebb.wallet.dto.WalletTransactionSpecificationDTO;
 import ir.ebb.wallet.entity.WalletTransactionEntity;
 import lombok.RequiredArgsConstructor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class WalletTransactionRepository {
 
     private static final String SELECT = """

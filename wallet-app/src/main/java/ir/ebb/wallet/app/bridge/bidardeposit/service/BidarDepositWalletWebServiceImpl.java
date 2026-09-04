@@ -13,10 +13,13 @@ import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Objects;
 
 @Slf4j
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class BidarDepositWalletWebServiceImpl implements BidarDepositWalletWebService {
 
     private final WalletFacade walletFacade;

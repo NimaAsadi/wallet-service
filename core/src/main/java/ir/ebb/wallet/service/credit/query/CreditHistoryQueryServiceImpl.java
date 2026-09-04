@@ -7,7 +7,11 @@ import ir.ebb.wallet.entity.CreditHistoryEntity;
 import ir.ebb.wallet.repository.credit.CreditHistoryRepository;
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class CreditHistoryQueryServiceImpl implements CreditHistoryQueryService {
 
     private final CreditHistoryRepository creditHistoryRepository;

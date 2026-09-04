@@ -13,6 +13,8 @@ import org.apache.pekko.actor.typed.javadsl.AskPattern;
 import org.apache.pekko.cluster.sharding.typed.javadsl.ClusterSharding;
 import org.apache.pekko.cluster.sharding.typed.javadsl.EntityRef;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
@@ -30,6 +32,7 @@ import java.util.function.Function;
  * operations are <em>fire-and-forget</em> (one {@code tell} per wallet).
  */
 @Slf4j
+@Singleton
 public class WalletFacade {
 
     private static final Duration ASK_TIMEOUT = Duration.ofSeconds(10);
@@ -37,6 +40,7 @@ public class WalletFacade {
     private final ActorSystem<?> system;
     private final ClusterSharding sharding;
 
+    @Inject
     public WalletFacade(ActorSystem<?> system) {
         this.system = system;
         this.sharding = ClusterSharding.get(system);

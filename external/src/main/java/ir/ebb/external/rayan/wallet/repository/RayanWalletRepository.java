@@ -4,10 +4,13 @@ import ir.ebb.base.jdbc.Jdbc;
 import ir.ebb.external.rayan.wallet.entity.RayanWalletEntity;
 import lombok.RequiredArgsConstructor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.util.Optional;
 
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class RayanWalletRepository {
 
     private static final String SELECT = """

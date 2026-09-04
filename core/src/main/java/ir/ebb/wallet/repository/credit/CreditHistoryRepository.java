@@ -7,12 +7,15 @@ import ir.ebb.wallet.dto.CreditSpecificationDTO;
 import ir.ebb.wallet.entity.CreditHistoryEntity;
 import lombok.RequiredArgsConstructor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class CreditHistoryRepository {
 
     private static final String SELECT = """

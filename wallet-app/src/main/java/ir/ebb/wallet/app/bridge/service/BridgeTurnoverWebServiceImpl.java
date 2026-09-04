@@ -11,11 +11,14 @@ import ir.ebb.wallet.service.query.WalletQueryService;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryService;
 import lombok.RequiredArgsConstructor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class BridgeTurnoverWebServiceImpl implements BridgeTurnoverWebService {
 
     private final TurnoverQueryService turnoverQueryService;

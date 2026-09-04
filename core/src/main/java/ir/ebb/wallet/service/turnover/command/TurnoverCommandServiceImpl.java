@@ -7,10 +7,13 @@ import ir.ebb.wallet.entity.WalletEntity;
 import ir.ebb.wallet.repository.turnover.TurnoverRepository;
 import lombok.RequiredArgsConstructor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.UUID;
 
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class TurnoverCommandServiceImpl implements TurnoverCommandService {
 
     private final TurnoverRepository turnoverRepository;

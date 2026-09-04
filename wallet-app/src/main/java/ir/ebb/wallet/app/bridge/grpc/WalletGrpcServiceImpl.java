@@ -15,8 +15,12 @@ import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 @Slf4j
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class WalletGrpcServiceImpl extends WalletServiceGrpc.WalletServiceImplBase {
 
     private final WalletFacade walletFacade;

@@ -12,10 +12,13 @@ import ir.ebb.external.rayan.wallet.transformer.RayanWalletResponseTransformer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 
 @Slf4j
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class RayanWalletQueryServiceImpl implements RayanWalletQueryService {
 
     private final RayanLoginService rayanLoginService;

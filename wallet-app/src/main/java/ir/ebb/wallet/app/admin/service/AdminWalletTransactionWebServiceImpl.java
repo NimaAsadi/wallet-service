@@ -7,7 +7,11 @@ import ir.ebb.wallet.app.admin.transformer.WalletTransactionTransformer;
 import ir.ebb.wallet.service.transaction.query.WalletTransactionQueryService;
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class AdminWalletTransactionWebServiceImpl implements AdminWalletTransactionWebService {
 
     private final WalletTransactionQueryService walletTransactionQueryService;

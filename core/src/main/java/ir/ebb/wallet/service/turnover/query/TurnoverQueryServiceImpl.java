@@ -8,11 +8,14 @@ import ir.ebb.wallet.entity.TurnoverEntity;
 import ir.ebb.wallet.repository.turnover.TurnoverRepository;
 import lombok.RequiredArgsConstructor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class TurnoverQueryServiceImpl implements TurnoverQueryService {
 
     private final TurnoverRepository turnoverRepository;

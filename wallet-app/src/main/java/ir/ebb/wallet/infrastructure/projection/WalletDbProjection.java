@@ -20,6 +20,8 @@ import org.apache.pekko.projection.javadsl.SourceProvider;
 import org.apache.pekko.projection.r2dbc.R2dbcProjectionSettings;
 import org.apache.pekko.projection.r2dbc.javadsl.R2dbcProjection;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,6 +43,7 @@ import java.util.Optional;
  * implemented the projection parks (backoff-retries) on the first {@code WalletActor} event
  * rather than advancing its offset past it.
  */
+@Singleton
 public class WalletDbProjection {
 
     private static final String PROJECTION_NAME = "WalletDbProjection";
@@ -52,6 +55,7 @@ public class WalletDbProjection {
     private final WalletDebtRepository walletDebtRepository;
     private final WalletTransactionRepository walletTransactionRepository;
 
+    @Inject
     public WalletDbProjection(ActorSystem<?> system,
                               WalletRepository walletRepository,
                               WalletDebtRepository walletDebtRepository,

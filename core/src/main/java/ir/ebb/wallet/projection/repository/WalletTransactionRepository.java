@@ -4,6 +4,8 @@ import io.r2dbc.spi.Statement;
 import ir.ebb.wallet.projection.entity.WalletTransactionEntity;
 import org.apache.pekko.projection.r2dbc.javadsl.R2dbcSession;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -17,7 +19,13 @@ import java.util.UUID;
  * {@code bindNull}; the identity/enum columns stay guarded (a leg without them is a programming
  * error, not a schema null).
  */
+@Singleton
 public class WalletTransactionRepository extends BaseWalletTransactionRepository {
+
+    /** Explicit for Dagger — the inherited default ctor is invisible to annotation processing. */
+    @Inject
+    public WalletTransactionRepository() {
+    }
 
     /** Copied verbatim from the generated repository (its constant is private). */
     private static final String INSERT_STATEMENT = "INSERT INTO \"wallet_transaction\"(id, version, account_number, wallet_id, wallet_operation_type, wallet_transaction_type, wallet_parameter_type, amount, tracking_id, frozen_before, frozen_after, balance_before, balance_after) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)";

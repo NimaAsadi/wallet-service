@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +25,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class RayanWalletJobServiceImpl implements RayanWalletJobService {
 
     private final WalletFacade walletFacade;

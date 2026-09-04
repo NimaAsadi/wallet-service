@@ -3,6 +3,8 @@ package ir.ebb.external.rayan.wallet.repository;
 import ir.ebb.base.jdbc.Jdbc;
 import lombok.RequiredArgsConstructor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
 
@@ -10,7 +12,8 @@ import java.time.LocalDateTime;
  * JDBC replacement. The two batched deletes preserve the original 10k-chunk
  * native SQL; the caller loops until the returned count is 0.
  */
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class RayanWalletHistoryRepository {
 
     private static final String DELETE_BEFORE = """

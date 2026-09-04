@@ -9,11 +9,14 @@ import ir.ebb.wallet.dto.TurnoverSpecificationDTO;
 import ir.ebb.wallet.entity.TurnoverEntity;
 import lombok.RequiredArgsConstructor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class TurnoverRepository {
 
     private static final String SELECT = """

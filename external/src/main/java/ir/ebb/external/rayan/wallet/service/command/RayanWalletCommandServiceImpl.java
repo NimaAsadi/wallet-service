@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.core.BaseConnection;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.io.*;
 import java.sql.Connection;
@@ -23,7 +25,8 @@ import java.util.Collection;
 import java.util.UUID;
 
 @Slf4j
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class RayanWalletCommandServiceImpl implements RayanWalletCommandService {
 
     private final RayanLoginService rayanLoginService;

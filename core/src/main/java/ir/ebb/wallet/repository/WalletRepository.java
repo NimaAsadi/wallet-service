@@ -10,6 +10,8 @@ import ir.ebb.wallet.entity.WalletEntity;
 import ir.ebb.wallet.entity.WalletParameterEmbedded;
 import lombok.RequiredArgsConstructor;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +25,8 @@ import java.util.UUID;
  * was removed pending the new projection for the next-gen wallet actor. All reads are
  * self-contained (own connection from the pool).
  */
-@RequiredArgsConstructor
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class WalletRepository {
 
     private static final String SELECT_WALLET = """

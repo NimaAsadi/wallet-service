@@ -12,4 +12,7 @@ dependencies {
 
     implementation libs.bundles.jacksonBundle
     implementation libs.postgres
+
+    // DI annotations only; dagger-compiler runs exclusively in wallet-app.
+    implementation libs.dagger
 }

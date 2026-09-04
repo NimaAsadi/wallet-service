@@ -22,6 +22,10 @@ dependencies {
 
     implementation libs.protobuf
 
+    // DI annotations only (@Inject/@Singleton from javax.inject); dagger-compiler runs
+    // exclusively in wallet-app where the @Component lives.
+    implementation libs.dagger
+
     // @GenerateRepository processing for projection entities in core main + test sources.
     // The project dependency resolves base's runtime variant, so javapoet and
     // pekko-projection-r2dbc ride along on the processor path.

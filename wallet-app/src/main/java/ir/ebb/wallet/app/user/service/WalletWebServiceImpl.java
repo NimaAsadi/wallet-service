@@ -6,7 +6,11 @@ import ir.ebb.wallet.app.user.transformer.WalletTransformer;
 import ir.ebb.wallet.wallet.WalletFacade;
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class WalletWebServiceImpl implements WalletWebService {
 
     private final WalletFacade walletFacade;

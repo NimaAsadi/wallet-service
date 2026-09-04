@@ -6,12 +6,20 @@ import ir.ebb.wallet.projection.entity.WalletDebtEntity;
 import ir.ebb.wallet.projection.entity.WalletEntity;
 import org.apache.pekko.projection.r2dbc.javadsl.R2dbcSession;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
+@Singleton
 public class WalletRepository extends BaseWalletRepository {
+
+    /** Explicit for Dagger — the inherited default ctor is invisible to annotation processing. */
+    @Inject
+    public WalletRepository() {
+    }
 
     /**
      * 1:1 join with {@code wallet_debt} (its PK {@code wallet_id} is the FK to {@code wallet.id}).

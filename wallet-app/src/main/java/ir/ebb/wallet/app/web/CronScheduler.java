@@ -8,6 +8,8 @@ import com.cronutils.parser.CronParser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pekko.actor.typed.ActorSystem;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -20,6 +22,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * added so jobs don't all land on the same instant.
  */
 @Slf4j
+@Singleton
 public class CronScheduler {
 
     private static final ZoneId TEHRAN = ZoneId.of("Asia/Tehran");
@@ -28,6 +31,7 @@ public class CronScheduler {
 
     private final ActorSystem<?> system;
 
+    @Inject
     public CronScheduler(ActorSystem<?> system) {
         this.system = system;
     }

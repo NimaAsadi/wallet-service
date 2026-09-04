@@ -41,6 +41,12 @@ import org.apache.pekko.http.javadsl.server.AllDirectives;
 import org.apache.pekko.http.javadsl.server.ExceptionHandler;
 import org.apache.pekko.http.javadsl.server.Route;
 
+import ir.ebb.wallet.app.di.AdminJwtVerifier;
+import ir.ebb.wallet.app.di.BridgeJwtVerifier;
+import ir.ebb.wallet.app.di.UserJwtVerifier;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -60,6 +66,7 @@ import static org.apache.pekko.http.javadsl.server.PathMatchers.segment;
  * in the body, not as the HTTP status).
  */
 @Slf4j
+@Singleton
 public class WalletHttpServer extends AllDirectives {
 
     private final ObjectMapper objectMapper;
@@ -75,8 +82,11 @@ public class WalletHttpServer extends AllDirectives {
     private final AdminWalletWebService adminWalletWebService;
     private final AdminWalletTransactionWebService adminWalletTransactionWebService;
 
+    @Inject
     public WalletHttpServer(ObjectMapper objectMapper,
-                            JwtVerifier userVerifier, JwtVerifier adminVerifier, JwtVerifier bridgeVerifier,
+                            @UserJwtVerifier JwtVerifier userVerifier,
+                            @AdminJwtVerifier JwtVerifier adminVerifier,
+                            @BridgeJwtVerifier JwtVerifier bridgeVerifier,
                             WalletWebService walletWebService, TurnoverWebService turnoverWebService,
                             BridgeWalletWebService bridgeWalletWebService, BridgeTurnoverWebService bridgeTurnoverWebService,
                             BidarDepositWalletWebService bidarDepositWalletWebService,

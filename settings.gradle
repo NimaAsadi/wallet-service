@@ -87,6 +87,13 @@ dependencyResolutionManagement {
             library('kafkaClients', 'org.apache.kafka', 'kafka-clients').version('3.8.1')
 
             library('lombok', 'org.projectlombok', 'lombok').version('1.18.38')
+
+            // Dagger 2 — compile-time DI. Library modules only need the runtime jar (for the
+            // javax.inject annotations; Dagger reads @Inject constructors from the binary
+            // classpath); only wallet-app runs dagger-compiler for the @Component graph.
+            version('dagger', '2.60.1')
+            library('dagger', 'com.google.dagger', 'dagger').versionRef('dagger')
+            library('daggerCompiler', 'com.google.dagger', 'dagger-compiler').versionRef('dagger')
             library('apacheCommons', 'org.apache.commons', 'commons-lang3').version('3.19.0')
             library('uuidCreator', 'com.github.f4b6a3', 'uuid-creator').version('6.0.0')
             library('protobuf', 'com.google.protobuf', 'protobuf-java').version('4.33.0')
