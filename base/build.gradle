@@ -6,4 +6,21 @@ dependencies {
     api libs.apacheCommons
     api libs.uuidCreator
     api libs.bundles.jacksonBundle
+
+    // BaseRepository's public API exposes R2dbcSession + pekko Done → api, not implementation.
+    // Also brings io.r2dbc:r2dbc-spi (Row/Statement) transitively.
+    api libs.pekkoProjectionR2dbc
+    // JavaPoet is only needed at annotation-processing time (inside RepositoryProcessor).
+    implementation libs.javapoet
+
+    // Self-test the processor against base's own test entities (src/test/java). A project
+    // cannot be its own annotationProcessor, so point the test processor path at main's
+    // compiled output — this FileCollection carries the classes dirs AND the resources
+    // dir (with the META-INF/services registration).
+    testAnnotationProcessor sourceSets.main.output
+    // main.output is a bare file collection (no transitive metadata); the processor uses
+    // R2dbcSession/Done/Statement/BaseRepository class literals, so these must be on the
+    // processor path explicitly.
+    testAnnotationProcessor libs.javapoet
+    testAnnotationProcessor libs.pekkoProjectionR2dbc
 }

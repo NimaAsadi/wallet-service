@@ -37,8 +37,6 @@ public class WalletTransactionEntity {
 
     public long version = 0L;
 
-    public UUID userId;
-
     public long accountNumber = 0L;
 
     public UUID walletId;

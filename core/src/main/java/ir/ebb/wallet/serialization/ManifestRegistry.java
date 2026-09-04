@@ -1,5 +1,18 @@
 package ir.ebb.wallet.serialization;
 
+import ir.ebb.wallet.actor.command.CreateWallet;
+import ir.ebb.wallet.actor.command.Deposit;
+import ir.ebb.wallet.actor.command.Freeze;
+import ir.ebb.wallet.actor.command.Spend;
+import ir.ebb.wallet.actor.command.Unfreeze;
+import ir.ebb.wallet.actor.command.Withdraw;
+import ir.ebb.wallet.actor.event.Deposited;
+import ir.ebb.wallet.actor.event.Frozen;
+import ir.ebb.wallet.actor.event.Spent;
+import ir.ebb.wallet.actor.event.Unfrozen;
+import ir.ebb.wallet.actor.event.WalletCreated;
+import ir.ebb.wallet.actor.event.Withdrew;
+import ir.ebb.wallet.aggregate.WalletAggregate;
 import ir.ebb.wallet.wallet.WalletCommand;
 import ir.ebb.wallet.wallet.WalletEvent;
 import ir.ebb.wallet.wallet.WalletReply;
@@ -101,6 +114,24 @@ public final class ManifestRegistry {
             // Sealed-permitted reply-to variant (ActorRef<Done>); currently unused by the command
             // handler — registered defensively so the full sealed command surface serializes.
             .register("cmd-deposit2:v1", WalletCommand.Deposit2.class)
+            // ── Next-gen actor events (ir.ebb.wallet.actor.event; journal-persisted) ──────────
+            .register("actor-wallet-created:v1", WalletCreated.class)
+            .register("actor-deposited:v1", Deposited.class)
+            .register("actor-frozen:v1", Frozen.class)
+            .register("actor-unfrozen:v1", Unfrozen.class)
+            .register("actor-spent:v1", Spent.class)
+            .register("actor-withdrew:v1", Withdrew.class)
+            // ── Next-gen actor state (persistence state / embedded in WalletCreated) ─────────
+            // NOTE: WalletAggregate currently serializes lossily (private fields, no getters /
+            // no-arg ctor → {}); the actor migration must add getters or a record DTO.
+            .register("actor-wallet-aggregate:v1", WalletAggregate.class)
+            // ── Next-gen actor commands (ir.ebb.wallet.actor.command; inter-node ask) ────────
+            .register("actor-cmd-create-wallet:v1", CreateWallet.class)
+            .register("actor-cmd-deposit:v1", Deposit.class)
+            .register("actor-cmd-withdraw:v1", Withdraw.class)
+            .register("actor-cmd-freeze:v1", Freeze.class)
+            .register("actor-cmd-unfreeze:v1", Unfreeze.class)
+            .register("actor-cmd-spend:v1", Spend.class)
             .build();
 
     /**

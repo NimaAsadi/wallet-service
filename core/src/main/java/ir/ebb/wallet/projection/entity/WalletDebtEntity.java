@@ -32,8 +32,6 @@ public class WalletDebtEntity {
     @Column(name = "wallet_id", primaryKey = true)
     public UUID walletId;
 
-    public long version = 0L;
-
     @Column(name = "t2_to_t0_debt")
     public long t2ToT0Debt = 0L;
 
@@ -42,6 +40,18 @@ public class WalletDebtEntity {
 
     @Column(name = "t1_to_t0_debt")
     public long t1ToT0Debt = 0L;
+
+    @Column(name = "t2_to_credit_debt")
+    public Long t2ToCreditDebt = 0L;
+
+    @Column(name = "t1_to_credit_debt")
+    public Long t1ToCreditDebt = 0L;
+
+    @Column(name = "t2_to_separ_credit_debt")
+    public Long t2ToSeparCreditDebt = 0L;
+
+    @Column(name = "t1_to_separ_credit_debt")
+    public Long t1ToSeparCreditDebt = 0L;
 
     @Column(insertable = false, updatable = false)
     public LocalDateTime createdAt;

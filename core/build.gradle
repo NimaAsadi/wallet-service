@@ -22,5 +22,11 @@ dependencies {
 
     implementation libs.protobuf
 
+    // @GenerateRepository processing for projection entities in core main + test sources.
+    // The project dependency resolves base's runtime variant, so javapoet and
+    // pekko-projection-r2dbc ride along on the processor path.
+    annotationProcessor project(':base')
+    testAnnotationProcessor project(':base')
+
     testImplementation libs.pekkoPersistenceTestkit
 }

@@ -33,8 +33,6 @@ public class WalletEntity {
 
     public long version = 0L;
 
-    public UUID userId;
-
     public long accountNumber = 0L;
 
     @Column(name = "t0_balance")

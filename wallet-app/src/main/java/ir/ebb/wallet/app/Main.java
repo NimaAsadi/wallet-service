@@ -128,6 +128,16 @@ public class Main {
                 Entity.of(WalletActor.ENTITY_TYPE_KEY, WalletActor::create).withRole("wallet"));
         log.info("Cluster Sharding initialized for wallet entity");
 
+        // 5a. next-gen wallet read-model projection (WalletActor events → wallet/wallet_debt/wallet_transaction).
+        // FQNs: both projection repos collide with the legacy JDBC repos imported above.
+        new ir.ebb.wallet.infrastructure.projection.WalletDbProjection(
+                actorSystem,
+                new ir.ebb.wallet.projection.repository.WalletRepository(),
+                new ir.ebb.wallet.projection.repository.WalletDebtRepository(),
+                new ir.ebb.wallet.projection.repository.WalletTransactionRepository())
+                .init();
+        log.info("WalletDbProjection initialized for entity type WalletActor");
+
         // 6. messaging
         KafkaWalletProducer kafkaWalletProducer = new KafkaWalletProducer(
                 config.getString("wallet.kafka.bootstrap-servers"), objectMapper);

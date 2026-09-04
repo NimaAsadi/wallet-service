@@ -1,5 +1,6 @@
 package ir.ebb.wallet.aggregate;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import io.vavr.control.Try;
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
@@ -11,14 +12,17 @@ import ir.ebb.wallet.constant.valueobject.Money;
 import ir.ebb.wallet.constant.valueobject.WalletParameter;
 import ir.ebb.wallet.valueobject.WalletDebt;
 import ir.ebb.wallet.wallet.WalletSerializable;
+import lombok.Getter;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+@Getter
 public class WalletAggregate implements WalletSerializable {
 
+    private final UUID id;
     private final WalletParameter t0;
     private final WalletParameter t1;
     private final WalletParameter t2;
@@ -32,6 +36,7 @@ public class WalletAggregate implements WalletSerializable {
     private final Set<UUID> trackingIds;
 
     public WalletAggregate(
+            UUID id,
             WalletParameter t0,
             WalletParameter t1,
             WalletParameter t2,
@@ -44,6 +49,7 @@ public class WalletAggregate implements WalletSerializable {
             Long dbsAccountNumber,
             Set<UUID> trackingIds
     ) {
+        this.id = id;
         this.t0 = t0;
         this.t1 = t1;
         this.t2 = t2;
@@ -59,6 +65,7 @@ public class WalletAggregate implements WalletSerializable {
 
     public static WalletCreated create(CreateWallet command) {
         var wallet =  new WalletAggregate(
+                UuidCreator.getTimeOrderedEpoch(),
                 new WalletParameter(),
                 new WalletParameter(),
                 new WalletParameter(),
@@ -209,6 +216,7 @@ public class WalletAggregate implements WalletSerializable {
             throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
 
         return new Deposited(
+                id,
                 command.trackingId(),
                 command.value(),
                 command.settlementDelay(),
@@ -305,7 +313,7 @@ public class WalletAggregate implements WalletSerializable {
     private void applyEvent(Unfrozen event) {
         trackingIds.add(event.trackingId());
         applyEvent(new Spent(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), event.canSpendSeparCredit(), this.dbsAccountNumber));
-        applyEvent(new Deposited(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), this.dbsAccountNumber));
+        applyEvent(new Deposited(id, event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), this.dbsAccountNumber));
     }
 
     private Withdrew validate(Withdraw command) {
