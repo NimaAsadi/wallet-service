@@ -12,56 +12,41 @@ import ir.ebb.wallet.constant.valueobject.Money;
 import ir.ebb.wallet.constant.valueobject.WalletParameter;
 import ir.ebb.wallet.valueobject.WalletDebt;
 import ir.ebb.wallet.wallet.WalletSerializable;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * The event-sourced state of {@code ir.ebb.wallet.actor.WalletActor}. Also journal-persisted as
+ * part of {@code actor.event.WalletCreated}, so it must round-trip through the Fastjson2
+ * serializer: no-arg constructor + setters (fields are deliberately not {@code final};
+ * {@code trackingIds} keeps an initializer so an omitted/empty JSON array never yields a null
+ * set — {@code applyEvent} calls {@code trackingIds.add} on every event).
+ */
 @Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class WalletAggregate implements WalletSerializable {
 
-    private final UUID id;
-    private final WalletParameter t0;
-    private final WalletParameter t1;
-    private final WalletParameter t2;
+    private UUID id;
+    private WalletParameter t0;
+    private WalletParameter t1;
+    private WalletParameter t2;
     private Long credit;
     private Long buyingPower;
     private Long initialCredit;
     private Long separCredit;
     private Long separInitialCredit;
-    private final WalletDebt walletDebt;
-    private final Long dbsAccountNumber;
-    private final Set<UUID> trackingIds;
-
-    public WalletAggregate(
-            UUID id,
-            WalletParameter t0,
-            WalletParameter t1,
-            WalletParameter t2,
-            Long credit,
-            Long buyingPower,
-            Long initialCredit,
-            Long separCredit,
-            Long separInitialCredit,
-            WalletDebt walletDebt,
-            Long dbsAccountNumber,
-            Set<UUID> trackingIds
-    ) {
-        this.id = id;
-        this.t0 = t0;
-        this.t1 = t1;
-        this.t2 = t2;
-        this.credit = credit;
-        this.buyingPower = buyingPower;
-        this.initialCredit = initialCredit;
-        this.separCredit = separCredit;
-        this.separInitialCredit = separInitialCredit;
-        this.walletDebt = walletDebt;
-        this.dbsAccountNumber = dbsAccountNumber;
-        this.trackingIds = trackingIds;
-    }
+    private WalletDebt walletDebt;
+    private Long dbsAccountNumber;
+    private Set<UUID> trackingIds = new HashSet<>();
 
     public static WalletCreated create(CreateWallet command) {
         var wallet =  new WalletAggregate(
@@ -216,7 +201,6 @@ public class WalletAggregate implements WalletSerializable {
             throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
 
         return new Deposited(
-                id,
                 command.trackingId(),
                 command.value(),
                 command.settlementDelay(),
@@ -313,7 +297,7 @@ public class WalletAggregate implements WalletSerializable {
     private void applyEvent(Unfrozen event) {
         trackingIds.add(event.trackingId());
         applyEvent(new Spent(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), event.canSpendSeparCredit(), this.dbsAccountNumber));
-        applyEvent(new Deposited(id, event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), this.dbsAccountNumber));
+        applyEvent(new Deposited(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType(), this.dbsAccountNumber));
     }
 
     private Withdrew validate(Withdraw command) {

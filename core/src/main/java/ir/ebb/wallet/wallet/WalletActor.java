@@ -24,7 +24,6 @@ import org.apache.pekko.persistence.typed.javadsl.RetentionCriteria;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -41,10 +40,6 @@ import java.util.UUID;
  * {@code DUPLICATE_TRACKING_ID}; event application is idempotent by construction
  * (absolute resulting-state values). The journal serializes writes per persistence-id,
  * replacing the old optimistic-lock + reload-and-retry path.
- *
- * <p>Events are tagged with a single {@link WalletTags#TAG} so the slice-based
- * {@code eventsBySlices} R2DBC projections can consume them (partitioning is by entity type
- * + slice range, derived from the persistence id — see {@code ProjectionBootstrap}).
  */
 @Slf4j
 public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent, WalletState> {
@@ -86,12 +81,6 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
     @Override
     public WalletState emptyState() {
         return WalletState.empty();
-    }
-
-    /** Tag every wallet event with the single wallet tag (the R2DBC projection partitions by slice, not tag). */
-    @Override
-    public Set<String> tagsFor(WalletEvent event) {
-        return Set.of(WalletTags.TAG);
     }
 
     @Override

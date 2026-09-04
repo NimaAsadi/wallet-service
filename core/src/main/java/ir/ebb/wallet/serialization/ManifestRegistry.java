@@ -122,8 +122,7 @@ public final class ManifestRegistry {
             .register("actor-spent:v1", Spent.class)
             .register("actor-withdrew:v1", Withdrew.class)
             // ── Next-gen actor state (persistence state / embedded in WalletCreated) ─────────
-            // NOTE: WalletAggregate currently serializes lossily (private fields, no getters /
-            // no-arg ctor → {}); the actor migration must add getters or a record DTO.
+            // WalletAggregate round-trips via its no-arg constructor + setters (see its javadoc).
             .register("actor-wallet-aggregate:v1", WalletAggregate.class)
             // ── Next-gen actor commands (ir.ebb.wallet.actor.command; inter-node ask) ────────
             .register("actor-cmd-create-wallet:v1", CreateWallet.class)

@@ -4,6 +4,8 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.model.user.User;
+import ir.ebb.wallet.constant.valueobject.WalletParameter;
+import ir.ebb.wallet.valueobject.WalletDebt;
 import ir.ebb.wallet.valueobject.WalletTransaction;
 import ir.ebb.wallet.constant.enumeration.WalletOperationType;
 import ir.ebb.wallet.constant.enumeration.WalletParameterType;
@@ -21,6 +23,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -230,6 +233,85 @@ class FastJsonSerializerTest {
                 serializer.toBinary(new WalletEvent.WalletMutated(List.of(leg()), sampleState())), UTF_8);
         assertThat(json).contains("BANK_GATEWAY").contains("DEPOSIT").contains("T0");
         assertThat(json).doesNotContain(SettlementDelay.class.getName());
+    }
+
+    // ── next-gen actor: WalletCreated embeds the event-sourced state (WalletAggregate) ────────
+
+    private ir.ebb.wallet.aggregate.WalletAggregate populatedAggregate() {
+        var debt = new WalletDebt();
+        debt.setT2Tot0Debt(1L);
+        debt.setT1Tot0Debt(2L);
+        debt.setT2ToCreditDebt(3L);
+        debt.setT1ToSeparCreditDebt(4L);
+        return new ir.ebb.wallet.aggregate.WalletAggregate(
+                UUID.randomUUID(),
+                new WalletParameter(100L, 20L),
+                new WalletParameter(50L, 0L),
+                new WalletParameter(0L, 0L),
+                200L, 999L, 30L, 30L, 30L,
+                debt,
+                1234567890L,
+                new HashSet<>(List.of(UUID.randomUUID(), UUID.randomUUID())));
+    }
+
+    @Test
+    void roundTrips_actorWalletCreatedWithPopulatedAggregate() {
+        var aggregate = populatedAggregate();
+        var original = new ir.ebb.wallet.actor.event.WalletCreated(aggregate);
+
+        String manifest = serializer.manifest(original);
+        assertThat(manifest).isEqualTo("actor-wallet-created:v1");
+
+        byte[] bytes = serializer.toBinary(original);
+        String json = new String(bytes, UTF_8);
+        assertThat(json).contains("dbsAccountNumber")
+                .doesNotContain("@type")
+                .doesNotContain("ir.ebb.");
+
+        var back = (ir.ebb.wallet.actor.event.WalletCreated) serializer.fromBinary(bytes, manifest);
+        var state = back.wallet();
+        assertThat(state.getId()).isEqualTo(aggregate.getId());
+        assertThat(state.getDbsAccountNumber()).isEqualTo(1234567890L);
+        assertThat(state.getCredit()).isEqualTo(200L);
+        assertThat(state.getBuyingPower()).isEqualTo(999L);
+        assertThat(state.getInitialCredit()).isEqualTo(30L);
+        assertThat(state.getSeparCredit()).isEqualTo(30L);
+        assertThat(state.getSeparInitialCredit()).isEqualTo(30L);
+        assertThat(state.getT0()).isEqualTo(new WalletParameter(100L, 20L));
+        assertThat(state.getT1()).isEqualTo(new WalletParameter(50L, 0L));
+        assertThat(state.getT2()).isEqualTo(new WalletParameter(0L, 0L));
+        assertThat(state.getWalletDebt()).isEqualTo(aggregate.getWalletDebt());
+        assertThat(state.getTrackingIds())
+                .containsExactlyInAnyOrderElementsOf(aggregate.getTrackingIds());
+    }
+
+    @Test
+    void actorWalletCreated_withoutTrackingIds_yieldsNonNullSet() {
+        // The field initializer must hold: a payload without trackingIds (older writer, hand-edit)
+        // deserializes to an empty set, never null — WalletAggregate.applyEvent calls
+        // trackingIds.add on every event, and a null set would NPE the actor.
+        byte[] bytes = ("{\"wallet\":{\"id\":\"" + UUID.randomUUID() + "\",\"dbsAccountNumber\":42}}")
+                .getBytes(UTF_8);
+
+        var back = (ir.ebb.wallet.actor.event.WalletCreated)
+                serializer.fromBinary(bytes, "actor-wallet-created:v1");
+
+        assertThat(back.wallet().getTrackingIds()).isNotNull().isEmpty();
+        assertThat(back.wallet().getDbsAccountNumber()).isEqualTo(42L);
+    }
+
+    @Test
+    void roundTrips_actorWalletCreatedViaRegistryStateManifest() {
+        // The aggregate is also persisted standalone (snapshots / state manifest) — prove that
+        // path with its own manifest, not just embedded in WalletCreated.
+        var aggregate = populatedAggregate();
+        assertThat(serializer.manifest(aggregate)).isEqualTo("actor-wallet-aggregate:v1");
+
+        byte[] bytes = serializer.toBinary(aggregate);
+        var back = (ir.ebb.wallet.aggregate.WalletAggregate)
+                serializer.fromBinary(bytes, "actor-wallet-aggregate:v1");
+
+        assertThat(back).usingRecursiveComparison().isEqualTo(aggregate);
     }
 
     // ── forward compatibility: value types not (yet) in the protocol ──────────────

@@ -6,31 +6,34 @@ import ir.ebb.wallet.constant.valueobject.WalletParameter;
 import ir.ebb.wallet.projection.entity.WalletDebtEntity;
 import ir.ebb.wallet.projection.entity.WalletEntity;
 import ir.ebb.wallet.projection.entity.WalletTransactionEntity;
+import ir.ebb.wallet.projection.repository.WalletWithDebt;
 import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.valueobject.WalletDebt;
 import ir.ebb.wallet.valueobject.WalletTransaction;
 
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Adapts the domain value objects ({@code ir.ebb.wallet.valueobject.*}) onto the projection
- * (read-model) entities ({@code ir.ebb.wallet.projection.entity.*}) that the generated R2DBC
- * repositories persist — the projection-family counterpart of the VOs' legacy
- * {@code adaptToEntity()}/{@code adapt()} methods targeting {@code ir.ebb.wallet.entity.*}.
+ * Adapts the domain value objects ({@code ir.ebb.wallet.valueobject.*}) and the
+ * {@code ir.ebb.wallet.aggregate.WalletAggregate} onto the projection (read-model) entities
+ * ({@code ir.ebb.wallet.projection.entity.*}) that the generated R2DBC repositories persist —
+ * the projection-family counterpart of the VOs' legacy {@code adaptToEntity()}/{@code adapt()}
+ * methods targeting {@code ir.ebb.wallet.entity.*}.
  *
- * <p>Fields the VOs carry no source for arrive as parameters: {@code userId} (wallet +
- * transaction — the generated repositories bind nulls directly, which the Postgres R2DBC
- * driver rejects), the {@code wallet_debt} PK {@code walletId} (threaded in from the owning
- * wallet's id, like the legacy flow did), and the {@code wallet_transaction} {@code id}
- * (deterministic per journal event for replay idempotency — see the {@code WalletDbProjectionHandler}
- * contract). The four credit-related {@code WalletDebt} counters have no columns and are dropped.
+ * <p>Fields the sources carry no value for arrive as parameters: the {@code wallet_debt} PK
+ * {@code walletId} (threaded in from the owning wallet's id, like the legacy flow did), and the
+ * {@code wallet_transaction} {@code id} (deterministic per journal event + leg index for replay
+ * idempotency — see the {@code WalletDbProjectionHandler} contract; without it a fresh
+ * time-ordered UUID is minted).
  *
  * <p>Boxed {@code Long} sources unbox to the entities' primitive columns with a {@code 0}
  * default; the transaction's before/after audit columns stay boxed and pass {@code null}
  * through (meaningful for legs like unfreeze). {@code createdAt}/{@code updatedAt} are left
  * null — the schema defaults them on INSERT, and callers stamp {@code updatedAt} before
- * {@code updateOne(...)}.
+ * {@code updateOne(...)} (the generated UPDATE binds it, and the Postgres R2DBC driver rejects
+ * null binds).
  */
 public final class WalletProjectionAdapter {
 
@@ -63,13 +66,27 @@ public final class WalletProjectionAdapter {
         entity.setT2ToT0Debt(Objects.requireNonNullElse(walletDebt.getT2Tot0Debt(), 0L));
         entity.setT2ToT1Debt(Objects.requireNonNullElse(walletDebt.getT2Tot1Debt(), 0L));
         entity.setT1ToT0Debt(Objects.requireNonNullElse(walletDebt.getT1Tot0Debt(), 0L));
+        entity.setT2ToCreditDebt(Objects.requireNonNullElse(walletDebt.getT2ToCreditDebt(), 0L));
+        entity.setT1ToCreditDebt(Objects.requireNonNullElse(walletDebt.getT1ToCreditDebt(), 0L));
+        entity.setT2ToSeparCreditDebt(Objects.requireNonNullElse(walletDebt.getT2ToSeparCreditDebt(), 0L));
+        entity.setT1ToSeparCreditDebt(Objects.requireNonNullElse(walletDebt.getT1ToSeparCreditDebt(), 0L));
         return entity;
     }
 
     public static WalletTransactionEntity adapt(WalletTransaction transaction) {
+        return adapt(transaction, UuidCreator.getTimeOrderedEpoch());
+    }
+
+    /**
+     * Same mapping with an explicit {@code id} — the projection handlers pass a deterministic
+     * {@code UUID.nameUUIDFromBytes(persistenceId + ":" + sequenceNr + ":" + legIndex)} so a
+     * replayed event re-inserts the identical row (idempotent under re-execution).
+     */
+    public static WalletTransactionEntity adapt(WalletTransaction transaction, UUID id) {
         Objects.requireNonNull(transaction, "transaction must not be null");
+        Objects.requireNonNull(id, "id must not be null");
         WalletTransactionEntity entity = new WalletTransactionEntity();
-        entity.setId(UuidCreator.getTimeOrderedEpoch());
+        entity.setId(id);
         entity.setAccountNumber(transaction.getAccountNumber());
         entity.setWalletId(transaction.getWalletId());
         entity.setWalletOperationType(transaction.getWalletOperationType());
@@ -96,7 +113,8 @@ public final class WalletProjectionAdapter {
         wallet.setSeparCredit(walletAggregate.getSeparCredit());
         wallet.setSeparInitialCredit(walletAggregate.getSeparInitialCredit());
         wallet.setWalletDebt(walletAggregate.getWalletDebt());
-        wallet.setAccountNumber(wallet.getAccountNumber());
+        wallet.setAccountNumber(Objects.requireNonNullElse(walletAggregate.getDbsAccountNumber(), 0L));
+        wallet.setWalletTransactions(new ArrayList<>());
         return wallet;
     }
 
@@ -108,9 +126,12 @@ public final class WalletProjectionAdapter {
         return parameter == null ? 0L : Objects.requireNonNullElse(parameter.getFrozen(), 0L);
     }
 
-    public static Wallet adapt(WalletEntity entity, WalletDebtEntity debtEntity) {
+    public static Wallet adapt(WalletWithDebt walletWithDebt) {
+        var entity = walletWithDebt.wallet();
+        var debtEntity = walletWithDebt.walletDebt();
         var wallet = new Wallet();
         wallet.setId(entity.getId());
+        wallet.setVersion(entity.getVersion());
         wallet.setT0(new WalletParameter(entity.getT0Balance(), entity.getT0Frozen()));
         wallet.setT1(new WalletParameter(entity.getT1Balance(), entity.getT1Frozen()));
         wallet.setT2(new WalletParameter(entity.getT2Balance(), entity.getT2Frozen()));
@@ -130,6 +151,7 @@ public final class WalletProjectionAdapter {
 
         wallet.setWalletDebt(walletDebt);
         wallet.setAccountNumber(entity.getAccountNumber());
+        wallet.setWalletTransactions(new ArrayList<>());
         return wallet;
     }
 }

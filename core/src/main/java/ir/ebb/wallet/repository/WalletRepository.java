@@ -19,8 +19,9 @@ import java.util.UUID;
 /**
  * Read-model repository for the {@code wallet}/{@code wallet_debt} projection tables.
  * <b>Read-only</b>: the wallet aggregate is event-sourced (the {@code WalletEntity}); these
- * tables are populated by {@code WalletReadModelProjection}. All reads are self-contained
- * (own connection from the pool).
+ * tables are populated by the wallet projection and are currently FROZEN — the old projection
+ * was removed pending the new projection for the next-gen wallet actor. All reads are
+ * self-contained (own connection from the pool).
  */
 @RequiredArgsConstructor
 public class WalletRepository {
@@ -40,7 +41,7 @@ public class WalletRepository {
         WalletEntity e = new WalletEntity();
         e.setId(Jdbc.getUuid(rs, "id"));
         e.setVersion(rs.getLong("version"));
-        e.setUser(User.of(Jdbc.getUuid(rs, "user_id"), Jdbc.getLong(rs, "account_number")));
+        e.setAccountNumber(Jdbc.getLong(rs, "account_number"));
         e.setT0(new WalletParameterEmbedded(Jdbc.getLong(rs, "t0_balance"), Jdbc.getLong(rs, "t0_frozen")));
         e.setT1(new WalletParameterEmbedded(Jdbc.getLong(rs, "t1_balance"), Jdbc.getLong(rs, "t1_frozen")));
         e.setT2(new WalletParameterEmbedded(Jdbc.getLong(rs, "t2_balance"), Jdbc.getLong(rs, "t2_frozen")));

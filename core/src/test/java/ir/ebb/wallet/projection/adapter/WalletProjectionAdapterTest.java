@@ -1,16 +1,21 @@
 package ir.ebb.wallet.projection.adapter;
 
+import ir.ebb.wallet.aggregate.WalletAggregate;
 import ir.ebb.wallet.constant.enumeration.WalletOperationType;
 import ir.ebb.wallet.constant.enumeration.WalletParameterType;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
+import ir.ebb.wallet.constant.valueobject.WalletParameter;
 import ir.ebb.wallet.projection.entity.WalletDebtEntity;
 import ir.ebb.wallet.projection.entity.WalletEntity;
 import ir.ebb.wallet.projection.entity.WalletTransactionEntity;
+import ir.ebb.wallet.projection.repository.WalletWithDebt;
 import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.valueobject.WalletDebt;
 import ir.ebb.wallet.valueobject.WalletTransaction;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,7 +100,6 @@ class WalletProjectionAdapterTest {
         WalletDebtEntity entity = WalletProjectionAdapter.adapt(debt, WALLET_ID);
 
         assertThat(entity.walletId).isEqualTo(WALLET_ID);
-        assertThat(entity.version).isZero();
         assertThat(entity.t2ToT0Debt).isEqualTo(5L);
         assertThat(entity.t2ToT1Debt).isEqualTo(6L);
         assertThat(entity.t1ToT0Debt).isEqualTo(7L);
@@ -119,11 +123,8 @@ class WalletProjectionAdapterTest {
                 .balanceAfter(1000L)
                 .build();
 
-        WalletTransactionEntity entity = WalletProjectionAdapter.adapt(transaction, TX_ID, USER_ID);
+        WalletTransactionEntity entity = WalletProjectionAdapter.adapt(transaction);
 
-        assertThat(entity.id).isEqualTo(TX_ID);
-        assertThat(entity.userId).isEqualTo(USER_ID);
-        assertThat(entity.version).isZero();
         assertThat(entity.accountNumber).isEqualTo(1234567L);
         assertThat(entity.walletId).isEqualTo(WALLET_ID);
         assertThat(entity.walletOperationType).isEqualTo(WalletOperationType.FREEZE);
@@ -152,7 +153,7 @@ class WalletProjectionAdapterTest {
                 .trackingId(TRACKING_ID)
                 .build();
 
-        WalletTransactionEntity entity = WalletProjectionAdapter.adapt(transaction, TX_ID, USER_ID);
+        WalletTransactionEntity entity = WalletProjectionAdapter.adapt(transaction);
 
         assertThat(entity.frozenBefore).isNull();
         assertThat(entity.frozenAfter).isNull();
@@ -162,12 +163,110 @@ class WalletProjectionAdapterTest {
     }
 
     @Test
+    void adaptWalletDebtMapsAllSevenCounters() {
+        WalletDebt debt = new WalletDebt();
+        debt.setT2Tot0Debt(1L);
+        debt.setT2Tot1Debt(2L);
+        debt.setT1Tot0Debt(3L);
+        debt.setT2ToCreditDebt(4L);
+        debt.setT1ToCreditDebt(5L);
+        debt.setT2ToSeparCreditDebt(6L);
+        debt.setT1ToSeparCreditDebt(7L);
+
+        WalletDebtEntity entity = WalletProjectionAdapter.adapt(debt, WALLET_ID);
+
+        // All seven counters must survive: a read-modify-write that dropped any of them would
+        // silently zero that column in the read model.
+        assertThat(entity.walletId).isEqualTo(WALLET_ID);
+        assertThat(entity.t2ToT0Debt).isEqualTo(1L);
+        assertThat(entity.t2ToT1Debt).isEqualTo(2L);
+        assertThat(entity.t1ToT0Debt).isEqualTo(3L);
+        assertThat(entity.t2ToCreditDebt).isEqualTo(4L);
+        assertThat(entity.t1ToCreditDebt).isEqualTo(5L);
+        assertThat(entity.t2ToSeparCreditDebt).isEqualTo(6L);
+        assertThat(entity.t1ToSeparCreditDebt).isEqualTo(7L);
+    }
+
+    @Test
+    void adaptAggregateMapsDbsAccountNumberAndInitsTransactions() {
+        WalletDebt debt = new WalletDebt();
+        debt.setT1Tot0Debt(9L);
+        WalletAggregate aggregate = new WalletAggregate(
+                WALLET_ID,
+                new WalletParameter(100L, 10L),
+                new WalletParameter(0L, 0L),
+                new WalletParameter(0L, 0L),
+                5L, 0L, 6L, 7L, 8L,
+                debt,
+                1234567L,
+                new HashSet<>(List.of(TRACKING_ID)));
+
+        Wallet wallet = WalletProjectionAdapter.adapt(aggregate);
+
+        // Regression: accountNumber must come from dbsAccountNumber (it self-assigned 0 before).
+        assertThat(wallet.getAccountNumber()).isEqualTo(1234567L);
+        assertThat(wallet.getId()).isEqualTo(WALLET_ID);
+        assertThat(wallet.getT0().getBalance()).isEqualTo(100L);
+        assertThat(wallet.getCredit()).isEqualTo(5L);
+        assertThat(wallet.getInitialCredit()).isEqualTo(6L);
+        assertThat(wallet.getSeparCredit()).isEqualTo(7L);
+        assertThat(wallet.getSeparInitialCredit()).isEqualTo(8L);
+        assertThat(wallet.getWalletDebt()).isSameAs(debt);
+        // The waterfall appends legs — a null list here NPEs the first deposit.
+        assertThat(wallet.getWalletTransactions()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void adaptWalletWithDebtInitsTransactionsAndMapsVersion() {
+        WalletEntity walletEntity = new WalletEntity();
+        walletEntity.id = WALLET_ID;
+        walletEntity.version = 7L;
+        walletEntity.accountNumber = 1234567L;
+        walletEntity.t0Balance = 100L;
+        WalletDebtEntity debtEntity = new WalletDebtEntity();
+        debtEntity.walletId = WALLET_ID;
+        debtEntity.t1ToT0Debt = 3L;
+
+        Wallet wallet = WalletProjectionAdapter.adapt(new WalletWithDebt(walletEntity, debtEntity));
+
+        assertThat(wallet.getVersion()).isEqualTo(7L);
+        assertThat(wallet.getId()).isEqualTo(WALLET_ID);
+        assertThat(wallet.getAccountNumber()).isEqualTo(1234567L);
+        assertThat(wallet.getT0().getBalance()).isEqualTo(100L);
+        assertThat(wallet.getWalletDebt().getT1Tot0Debt()).isEqualTo(3L);
+        assertThat(wallet.getWalletTransactions()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void adaptWalletTransactionUsesProvidedId() {
+        WalletTransaction transaction = WalletTransaction.builder()
+                .accountNumber(1234567L)
+                .walletId(WALLET_ID)
+                .walletOperationType(WalletOperationType.DEPOSIT)
+                .walletTransactionType(WalletTransactionType.BANK_GATEWAY)
+                .walletParameterType(WalletParameterType.T0)
+                .amount(500L)
+                .trackingId(TRACKING_ID)
+                .balanceBefore(0L)
+                .balanceAfter(500L)
+                .build();
+
+        WalletTransactionEntity entity = WalletProjectionAdapter.adapt(transaction, TX_ID);
+
+        // Replay idempotency: the handler's deterministic per-event id must be kept, not replaced.
+        assertThat(entity.id).isEqualTo(TX_ID);
+        assertThat(entity.walletId).isEqualTo(WALLET_ID);
+        assertThat(entity.amount).isEqualTo(500L);
+        assertThat(entity.balanceAfter).isEqualTo(500L);
+    }
+
+    @Test
     void adaptRejectsNullSources() {
         assertThatThrownBy(() -> WalletProjectionAdapter.adapt((Wallet) null))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> WalletProjectionAdapter.adapt((WalletDebt) null, WALLET_ID))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> WalletProjectionAdapter.adapt((WalletTransaction) null, TX_ID, USER_ID))
+        assertThatThrownBy(() -> WalletProjectionAdapter.adapt((WalletTransaction) null))
                 .isInstanceOf(NullPointerException.class);
     }
 }
