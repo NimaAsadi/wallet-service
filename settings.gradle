@@ -22,6 +22,9 @@ dependencyResolutionManagement {
             library('pekko', 'org.apache.pekko', 'pekko-actor-typed_3').versionRef('pekko')
             library('pekkoSlf4j', 'org.apache.pekko', 'pekko-slf4j_3').versionRef('pekko')
             library('pekkoStream', 'org.apache.pekko', 'pekko-stream_3').versionRef('pekko')
+            // Explicit 1.6.0 pin: management 1.1.0 pulls pekko-discovery 1.1.2 transitively,
+            // and Pekko's mixed-version guard refuses to start an ActorSystem over it.
+            library('pekkoDiscovery', 'org.apache.pekko', 'pekko-discovery_3').versionRef('pekko')
             library('pekkoHttpCore', 'org.apache.pekko', 'pekko-http-core_3').versionRef('pekkoHttp')
             library('pekkoHttp', 'org.apache.pekko', 'pekko-http_3').versionRef('pekkoHttp')
             library('pekkoHttpJackson', 'org.apache.pekko', 'pekko-http-jackson_3').versionRef('pekkoHttp')
@@ -109,12 +112,23 @@ dependencyResolutionManagement {
             library('junitParams', 'org.junit.jupiter', 'junit-jupiter-params').versionRef('junit')
             library('junitLauncher', 'org.junit.platform', 'junit-platform-launcher').version('1.10.3')
             library('assertj', 'org.assertj', 'assertj-core').version('3.25.1')
+            library('pekkoHttpTestkit', 'org.apache.pekko', 'pekko-http-testkit_3').versionRef('pekkoHttp')
+            // pekko-http-testkit needs pekko-testkit / pekko-stream-testkit but declares them
+            // 'provided', so they are never pulled in transitively — they must be listed here
+            // explicitly. They ARE covered by Pekko's mixed-version guard (ManifestInfo refuses
+            // to start an ActorSystem over a 1.1.x testkit next to 1.6.0 core), so they must
+            // track the core pekko train, same as pekkoPersistenceTestkit above. testkit 1.6.0
+            // is binary-compatible with pekko-http-testkit 1.3.0 — the same cross-train mix
+            // (core 1.6.0 + http 1.3.0) the runtime already ships.
+            library('pekkoTestkit', 'org.apache.pekko', 'pekko-testkit_3').versionRef('pekko')
+            library('pekkoStreamTestkit', 'org.apache.pekko', 'pekko-stream-testkit_3').versionRef('pekko')
             version('testcontainers', '1.20.1')
             library('testcontainers', 'org.testcontainers', 'testcontainers').versionRef('testcontainers')
             library('testcontainersPostgresql', 'org.testcontainers', 'postgresql').versionRef('testcontainers')
             library('testcontainersJunit', 'org.testcontainers', 'junit-jupiter').versionRef('testcontainers')
             bundle('testBundle', ['junitJupiter', 'junitParams', 'junitLauncher', 'assertj',
-                                  'testcontainers', 'testcontainersPostgresql', 'testcontainersJunit'])
+                                  'testcontainers', 'testcontainersPostgresql', 'testcontainersJunit',
+                                  'pekkoHttpTestkit', 'pekkoTestkit', 'pekkoStreamTestkit'])
         }
     }
 }
