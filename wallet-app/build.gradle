@@ -36,6 +36,10 @@ dependencies {
     // (declared after lombok in the root subprojects block, so lombok processes first).
     implementation libs.dagger
     annotationProcessor libs.daggerCompiler
+
+    // pekko-discovery comes in transitively at 1.1.2 from pekko-management 1.1.0; pinning
+    // 1.6.0 here keeps Pekko's mixed-version guard from refusing to start the test ActorSystem.
+    testImplementation libs.pekkoDiscovery
 }
 
 application {
