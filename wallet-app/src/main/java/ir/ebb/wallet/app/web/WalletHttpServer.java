@@ -71,7 +71,7 @@ import static org.apache.pekko.http.javadsl.server.PathMatchers.segment;
 public class WalletHttpServer extends AllDirectives {
 
     private final ObjectMapper objectMapper;
-    private final ValidationDirectives validation;
+    private final Validator validator;
     private final JwtVerifier userVerifier;
     private final JwtVerifier adminVerifier;
     private final JwtVerifier bridgeVerifier;
@@ -95,7 +95,7 @@ public class WalletHttpServer extends AllDirectives {
                             AdminWalletWebService adminWalletWebService,
                             AdminWalletTransactionWebService adminWalletTransactionWebService) {
         this.objectMapper = objectMapper;
-        this.validation = new ValidationDirectives(objectMapper, validator);
+        this.validator = validator;
         this.userVerifier = userVerifier;
         this.adminVerifier = adminVerifier;
         this.bridgeVerifier = bridgeVerifier;
@@ -153,19 +153,19 @@ public class WalletHttpServer extends AllDirectives {
                 pathPrefix("bidar-deposit", () -> concat(
                         path("deposit", () -> post(() -> entity(
                                 Jackson.unmarshaller(objectMapper, BidarDepositWalletDepositRequestDTO.class),
-                                req -> validation.validateBody(req,
+                                req -> ValidationDirectives.validateBody(validator, objectMapper, req,
                                         () -> created(ResponseHelper.success(bidarDepositWalletWebService.deposit(req), 201)))))),
                         path("freeze", () -> post(() -> entity(
                                 Jackson.unmarshaller(objectMapper, BidarDepositWalletFreezeRequestDTO.class),
-                                req -> validation.validateBody(req,
+                                req -> ValidationDirectives.validateBody(validator, objectMapper, req,
                                         () -> created(ResponseHelper.success(bidarDepositWalletWebService.freeze(req), 201)))))),
                         path("unfreeze", () -> post(() -> entity(
                                 Jackson.unmarshaller(objectMapper, BidarDepositWalletUnfreezeRequestDTO.class),
-                                req -> validation.validateBody(req,
+                                req -> ValidationDirectives.validateBody(validator, objectMapper, req,
                                         () -> created(ResponseHelper.success(bidarDepositWalletWebService.unfreeze(req), 201)))))),
                         path("withdraw", () -> post(() -> entity(
                                 Jackson.unmarshaller(objectMapper, BidarDepositWalletSpendRequestDTO.class),
-                                req -> validation.validateBody(req,
+                                req -> ValidationDirectives.validateBody(validator, objectMapper, req,
                                         () -> created(ResponseHelper.success(bidarDepositWalletWebService.spend(req), 201))))))
                 ))
         );
@@ -179,7 +179,7 @@ public class WalletHttpServer extends AllDirectives {
                         pathEnd(() -> concat(
                                 post(() -> entity(Jackson.unmarshaller(objectMapper, WalletRequestDTO.class), req ->
                                         requireAuthority(principal, "PERMISSION_USERS_UPDATE", () ->
-                                                validation.validateBody(req, () ->
+                                                ValidationDirectives.validateBody(validator, objectMapper, req, () ->
                                                         created(run(() -> adminWalletWebService.create(req.userId(), req.dbsAccountNumber()))))))),
                                 get(() -> parameterMap(params -> requireAuthority(principal, "PERMISSION_CUSTOMERWALLET_VIEW", () ->
                                         ok(ResponseHelper.success(adminWalletWebService.searchWallet(bindWalletSearch(params)))))))
@@ -191,12 +191,12 @@ public class WalletHttpServer extends AllDirectives {
                                 path("init", () -> put(() -> entity(
                                         Jackson.unmarshaller(objectMapper, WalletInitCreditRequestDTO.class), req ->
                                                 requireAuthorityAll(principal, "PERMISSION_CREDITS_ADD", "PERMISSION_USERS_SEARCH", () ->
-                                                        validation.validateBody(req, () ->
+                                                        ValidationDirectives.validateBody(validator, objectMapper, req, () ->
                                                                 created(run(() -> adminWalletWebService.initCredit(req, principal)))))))),
                                 path("remove", () -> put(() -> entity(
                                         Jackson.unmarshaller(objectMapper, WalletRequestDTO.class), req ->
                                                 requireAuthorityAll(principal, "PERMISSION_CREDITS_UPDATE", "PERMISSION_USERS_SEARCH", () ->
-                                                        validation.validateBody(req, () ->
+                                                        ValidationDirectives.validateBody(validator, objectMapper, req, () ->
                                                                 created(run(() -> adminWalletWebService.removeCredit(req, principal)))))))),
                                 path("history", () -> get(() -> parameterMap(params ->
                                         requireAuthorityAll(principal, "PERMISSION_CREDITS_VIEW", "PERMISSION_USERS_SEARCH", () ->

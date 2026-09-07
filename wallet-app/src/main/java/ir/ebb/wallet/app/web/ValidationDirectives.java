@@ -10,7 +10,6 @@ import org.apache.pekko.http.javadsl.model.ContentTypes;
 import org.apache.pekko.http.javadsl.model.HttpEntities;
 import org.apache.pekko.http.javadsl.model.StatusCode;
 import org.apache.pekko.http.javadsl.model.StatusCodes;
-import org.apache.pekko.http.javadsl.server.AllDirectives;
 import org.apache.pekko.http.javadsl.server.Route;
 
 import java.util.List;
@@ -18,32 +17,29 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static java.util.Comparator.comparing;
+import static org.apache.pekko.http.javadsl.server.Directives.complete;
 
 /**
- * Request-body validation directive: validates an unmarshalled DTO with the Jakarta
+ * Request-body validation utility: validates an unmarshalled DTO with the Jakarta
  * Bean Validation {@link Validator}; on violation completes with 400 and one
  * {@link ErrorResponse} per violation ("field: message", code
  * {@link ExceptionConstants#INVALID_REQUEST}), otherwise runs the inner route.
  *
- * <p>Standalone (not a {@link WalletHttpServer} method) so it is testable without the
- * server's constructor graph and reusable by future {@link BaseController} subclasses,
- * which simply hold one as a field.
+ * <p>Static (not a {@link WalletHttpServer} method or a per-server instance) so it is
+ * testable without the server's constructor graph and callable directly by any route —
+ * {@link BaseController} subclasses pass the Dagger-injected {@link Validator} (and
+ * {@link ObjectMapper}) at the call site.
  */
-public class ValidationDirectives extends AllDirectives {
+public final class ValidationDirectives {
 
-    private final ObjectMapper objectMapper;
-    private final Validator validator;
-
-    public ValidationDirectives(ObjectMapper objectMapper, Validator validator) {
-        this.objectMapper = objectMapper;
-        this.validator = validator;
+    private ValidationDirectives() {
     }
 
     /**
      * Named {@code validateBody}, not {@code validate} — {@code Directives} already has
      * {@code validate(BooleanSupplier, String, Supplier)}.
      */
-    public <T> Route validateBody(T body, Supplier<Route> inner) {
+    public static <T> Route validateBody(Validator validator, ObjectMapper objectMapper, T body, Supplier<Route> inner) {
         Set<ConstraintViolation<T>> violations = validator.validate(body);
         if (violations.isEmpty()) {
             return inner.get();
@@ -54,10 +50,10 @@ public class ValidationDirectives extends AllDirectives {
                 .map(v -> new ErrorResponse(v.getPropertyPath() + ": " + v.getMessage(),
                         ExceptionConstants.INVALID_REQUEST.getCode()))
                 .toList();
-        return completeJson(StatusCodes.BAD_REQUEST, new BaseErrorResponse(errors));
+        return completeJson(objectMapper, StatusCodes.BAD_REQUEST, new BaseErrorResponse(errors));
     }
 
-    private Route completeJson(StatusCode status, Object body) {
+    private static Route completeJson(ObjectMapper objectMapper, StatusCode status, Object body) {
         String json;
         try {
             json = objectMapper.writeValueAsString(body);

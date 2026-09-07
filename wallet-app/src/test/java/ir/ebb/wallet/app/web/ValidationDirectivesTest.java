@@ -37,8 +37,6 @@ class ValidationDirectivesTest extends JUnitRouteTest {
     private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
     private static final UUID TRACKING = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
-    private final ValidationDirectives validation = new ValidationDirectives(MAPPER, VALIDATOR);
-
     /**
      * {@link JUnitRouteTest} wires its {@code ActorSystem} through a JUnit&nbsp;4 rule
      * ({@code ExternalResource}), which the Jupiter engine never invokes — so the
@@ -58,7 +56,8 @@ class ValidationDirectivesTest extends JUnitRouteTest {
 
     /** Route under test: validates the fixture body, then answers "passed". */
     private TestRoute routeFor(Object body) {
-        return testRoute(validation.validateBody(body, () -> complete(StatusCodes.OK, "passed")));
+        return testRoute(ValidationDirectives.validateBody(VALIDATOR, MAPPER, body,
+                () -> complete(StatusCodes.OK, "passed")));
     }
 
     private BaseErrorResponse errorsOf(TestRouteResult result) throws Exception {
@@ -144,30 +143,29 @@ class ValidationDirectivesTest extends JUnitRouteTest {
 
     // ── BaseController reuse ──────────────────────────────────────────────────
 
-    /** Mirrors the intended future-controller shape: holds a ValidationDirectives field. */
+    /** Mirrors the intended future-controller shape: calls the static utility directly. */
     private static final class AdminWalletController extends BaseController {
-        private final ValidationDirectives validation;
         private final WalletRequestDTO request;
 
-        private AdminWalletController(ValidationDirectives validation, WalletRequestDTO request) {
-            this.validation = validation;
+        private AdminWalletController(WalletRequestDTO request) {
             this.request = request;
         }
 
         @Override
         public Route getRoute() {
             return path("wallet", () -> post(() ->
-                    validation.validateBody(request, () -> complete(StatusCodes.CREATED, "created"))));
+                    ValidationDirectives.validateBody(VALIDATOR, MAPPER, request,
+                            () -> complete(StatusCodes.CREATED, "created"))));
         }
     }
 
     @Test
-    void baseControllerSubclassReusesValidationDirectives() {
-        TestRoute valid = testRoute(new AdminWalletController(validation,
+    void baseControllerSubclassCallsStaticValidation() {
+        TestRoute valid = testRoute(new AdminWalletController(
                 new WalletRequestDTO("user", 1L)).getRoute());
         valid.run(HttpRequest.POST("/wallet")).assertStatusCode(StatusCodes.CREATED);
 
-        TestRoute invalid = testRoute(new AdminWalletController(validation,
+        TestRoute invalid = testRoute(new AdminWalletController(
                 new WalletRequestDTO(null, null)).getRoute());
         invalid.run(HttpRequest.POST("/wallet")).assertStatusCode(StatusCodes.BAD_REQUEST);
     }
