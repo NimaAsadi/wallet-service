@@ -78,6 +78,15 @@ dependencyResolutionManagement {
             library('jacksonJsr310', 'com.fasterxml.jackson.datatype', 'jackson-datatype-jsr310').versionRef('jackson')
             bundle('jacksonBundle', ['jacksonDatabind', 'jacksonJsr310'])
 
+            // Jakarta Bean Validation — the API the request DTOs already annotate with; pinned
+            // to the 3.0 generation (jakarta namespace). Hibernate Validator 8.0.x is the line
+            // implementing Validation 3.0 (9.x would pull Validation 3.1 — do not use);
+            // expressly is the Jakarta EL 5 impl its default message interpolator requires.
+            library('jakartaValidationApi', 'jakarta.validation', 'jakarta.validation-api').version('3.0.2')
+            version('hibernateValidator', '8.0.5.Final')
+            library('hibernateValidator', 'org.hibernate.validator', 'hibernate-validator').versionRef('hibernateValidator')
+            library('expressly', 'org.glassfish.expressly', 'expressly').version('5.0.0')
+
             // Fastjson2 — the Pekko serializer for wallet protocol messages (commands/events/
             // replies/state). Jackson above remains only for HTTP/Kafka/Rayan, NOT Pekko serialization.
             version('fastjson2', '2.0.57')

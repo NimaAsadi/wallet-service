@@ -23,7 +23,9 @@ dependencies {
 
     implementation libs.nimbusJwt
     implementation libs.cronUtils
-    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+    implementation libs.jakartaValidationApi
+    implementation libs.hibernateValidator
+    implementation libs.expressly
     implementation libs.kafkaClients
     implementation libs.logback
     implementation libs.uuidCreator

@@ -4,6 +4,8 @@ import com.typesafe.config.Config;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import ir.ebb.wallet.app.admin.service.AdminWalletTransactionWebService;
 import ir.ebb.wallet.app.admin.service.AdminWalletTransactionWebServiceImpl;
 import ir.ebb.wallet.app.admin.service.AdminWalletWebService;
@@ -60,6 +62,15 @@ public abstract class WebModule {
     @BridgeJwtVerifier
     public static JwtVerifier bridgeJwtVerifier(Config config) {
         return new JwtVerifier(config.getString("wallet.keycloak.bridge.jwk-set-uri"));
+    }
+
+    // ── Jakarta Bean Validation (request-body DTOs) ───────────────────────────
+
+    /** Default factory: collect-all (not failFast) so each violation maps to one error entry. */
+    @Provides
+    @Singleton
+    public static Validator validator() {
+        return Validation.buildDefaultValidatorFactory().getValidator();
     }
 
     // ── services whose constructors carry config primitives (no @Inject) ──────
