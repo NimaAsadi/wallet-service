@@ -3,7 +3,6 @@ package ir.ebb.wallet.wallet;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.ActorSystem;

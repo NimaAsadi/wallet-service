@@ -40,7 +40,7 @@ public class TurnoverWebServiceImpl implements TurnoverWebService {
                 : LocalDate.now().plusDays(1).atStartOfDay();
 
         TurnoverSpecificationDTO spec = TurnoverSpecificationDTO.builder()
-                .user(principal.asUser())
+                .dbsAccountNumber(principal.asUser())
                 .fromCreatedAt(from)
                 .toCreatedAt(to)
                 .build();

@@ -1,6 +1,5 @@
 package ir.ebb.wallet.service.turnover.command;
 
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.TurnoverOperationType;
 import ir.ebb.wallet.entity.TurnoverEntity;
 import ir.ebb.wallet.entity.WalletEntity;

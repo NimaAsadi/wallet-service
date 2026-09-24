@@ -264,7 +264,7 @@ class FastJsonSerializerTest {
 
         byte[] bytes = serializer.toBinary(original);
         String json = new String(bytes, UTF_8);
-        assertThat(json).contains("dbsAccountNumber")
+        assertThat(json).contains("accountNumber")
                 .doesNotContain("@type")
                 .doesNotContain("ir.ebb.");
 
@@ -290,7 +290,7 @@ class FastJsonSerializerTest {
         // The field initializer must hold: a payload without trackingIds (older writer, hand-edit)
         // deserializes to an empty set, never null — WalletAggregate.applyEvent calls
         // trackingIds.add on every event, and a null set would NPE the actor.
-        byte[] bytes = ("{\"wallet\":{\"id\":\"" + UUID.randomUUID() + "\",\"dbsAccountNumber\":42}}")
+        byte[] bytes = ("{\"wallet\":{\"id\":\"" + UUID.randomUUID() + "\",\"accountNumber\":42}}")
                 .getBytes(UTF_8);
 
         var back = (ir.ebb.wallet.actor.event.WalletCreated)

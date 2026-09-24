@@ -49,7 +49,7 @@ public class WalletRepository extends BaseWalletRepository {
 
     /**
      * Same joined row, keyed by {@code account_number} — the read model merges the
-     * {@code dbsAccountNumber + yyyyWW} weekly entities of one account into a single row, so the
+     * {@code accountNumber + yyyyWW} weekly entities of one account into a single row, so the
      * delta handlers look the wallet up by account number, not by the (weekly, rotating)
      * aggregate UUID. {@code ORDER BY created_at LIMIT 1} keeps the pick deterministic if
      * duplicate legacy rows for one account ever appear.

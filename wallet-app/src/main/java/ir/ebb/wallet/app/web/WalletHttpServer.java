@@ -313,7 +313,7 @@ public class WalletHttpServer extends AllDirectives {
         WalletTransactionSearchRequestDTO req = new WalletTransactionSearchRequestDTO();
         applyPaging(params, req);
         req.setUserId(params.get("userId"));
-        req.setAccountNumber(longParam(params, "dbsAccountNumber"));
+        req.setAccountNumber(longParam(params, "accountNumber"));
         req.setTrackingCode(uuidParam(params, "trackingCode"));
         return req;
     }

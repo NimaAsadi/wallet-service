@@ -17,7 +17,7 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 public class WalletTransactionEntity extends BaseEntityById {
 
-    private long accountNumber;
+    private Long accountNumber;
     private UUID walletId;
     private WalletOperationType walletOperationType;
     private WalletTransactionType walletTransactionType;

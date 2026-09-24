@@ -23,8 +23,10 @@ import java.util.Map;
 
 /**
  * Pekko serializer for every wallet protocol message (commands, events, replies, state) backed
- * by Alibaba Fastjson2. Bound once to the {@code ir.ebb.wallet.wallet.WalletSerializable} marker
- * in {@code application.conf}; replaces the previous Jackson JSON binding.
+ * by Alibaba Fastjson2. Bound once to both {@code ir.ebb.wallet.wallet.WalletSerializable} (legacy
+ * {@code wallet.*} protocol) and {@code ir.ebb.wallet.serialization.WalletSerializable} (next-gen
+ * {@code actor.*} protocol) markers in {@code application.conf}; replaces the previous Jackson
+ * JSON binding.
  *
  * <h3>Design</h3>
  * <ul>

@@ -2,7 +2,6 @@ package ir.ebb.wallet.service.turnover.query;
 
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.dto.TurnoverSpecificationDTO;
 import ir.ebb.wallet.entity.TurnoverEntity;
 import ir.ebb.wallet.repository.turnover.TurnoverRepository;
@@ -21,11 +20,11 @@ public class TurnoverQueryServiceImpl implements TurnoverQueryService {
     private final TurnoverRepository turnoverRepository;
 
     @Override
-    public List<TurnoverEntity> getTodayTurnoverByUser(User user) {
+    public List<TurnoverEntity> getTodayTurnoverByUser(long dbsAccountNumber) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().plusDays(1).atStartOfDay();
         TurnoverSpecificationDTO spec = TurnoverSpecificationDTO.builder()
-                .user(user)
+                .dbsAccountNumber(dbsAccountNumber)
                 .fromCreatedAt(startOfDay)
                 .toCreatedAt(endOfDay)
                 .build();

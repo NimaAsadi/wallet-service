@@ -3,7 +3,6 @@ package ir.ebb.wallet.repository.turnover;
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
 import ir.ebb.base.jdbc.Jdbc;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.TurnoverOperationType;
 import ir.ebb.wallet.dto.TurnoverSpecificationDTO;
 import ir.ebb.wallet.entity.TurnoverEntity;
@@ -20,7 +19,7 @@ import java.util.List;
 public class TurnoverRepository {
 
     private static final String SELECT = """
-            SELECT id, version, user_id, account_number, wallet_id, type,
+            SELECT id, version, account_number, wallet_id, type,
                    debit, credit, tracking_id, traded_quantity, traded_price, trade_number,
                    isin, issuing_company_afc_name, instrument_afc_norm_name,
                    receipt_bank_number, withdraw_rayan_id, created_at, updated_at
@@ -28,11 +27,11 @@ public class TurnoverRepository {
             """;
 
     private static final String INSERT = """
-            INSERT INTO turnover (id, version, user_id, account_number, wallet_id, type,
+            INSERT INTO turnover (id, version, account_number, wallet_id, type,
                 debit, credit, tracking_id, traded_quantity, traded_price, trade_number,
                 isin, issuing_company_afc_name, instrument_afc_norm_name,
                 receipt_bank_number, withdraw_rayan_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
             """;
 
     private final DataSource dataSource;
@@ -41,7 +40,7 @@ public class TurnoverRepository {
         TurnoverEntity e = new TurnoverEntity();
         e.setId(Jdbc.getUuid(rs, "id"));
         e.setVersion(rs.getLong("version"));
-        e.setUser(User.of(Jdbc.getUuid(rs, "user_id"), Jdbc.getLong(rs, "account_number")));
+        e.setAccountNumber(Jdbc.getLong(rs, "account_number"));
         e.setWalletId(Jdbc.getUuid(rs, "wallet_id"));
         String type = rs.getString("type");
         e.setType(type == null ? null : TurnoverOperationType.valueOf(type));
@@ -119,22 +118,29 @@ public class TurnoverRepository {
 
     private void insert(java.sql.Connection conn, TurnoverEntity e) {
         Jdbc.update(conn, INSERT,
-                e.getId(), e.getVersion(),
-                e.getUser().getKeycloakId(), e.getUser().getDbsAccountNumber(),
-                e.getWalletId(), e.getType(),
-                e.getDebit(), e.getCredit(), e.getTrackingId(),
-                e.getTradedQuantity(), e.getTradedPrice(), e.getTradeNumber(),
-                e.getIsin(), e.getIssuingCompanyAfcName(), e.getInstrumentAfcNormName(),
-                e.getReceiptBankNumber(), e.getWithdrawRayanId());
+                e.getId(),
+                e.getVersion(),
+                e.getAccountNumber(),
+                e.getWalletId(),
+                e.getType(),
+                e.getDebit(),
+                e.getCredit(),
+                e.getTrackingId(),
+                e.getTradedQuantity(),
+                e.getTradedPrice(),
+                e.getTradeNumber(),
+                e.getIsin(),
+                e.getIssuingCompanyAfcName(),
+                e.getInstrumentAfcNormName(),
+                e.getReceiptBankNumber(),
+                e.getWithdrawRayanId());
     }
 
     private String buildWhere(TurnoverSpecificationDTO spec, List<Object> params) {
         List<String> clauses = new ArrayList<>();
-        if (spec.user() != null) {
-            clauses.add("user_id = ?");
-            params.add(spec.user().getKeycloakId());
+        if (spec.dbsAccountNumber() != null) {
             clauses.add("account_number = ?");
-            params.add(spec.user().getDbsAccountNumber());
+            params.add(spec.dbsAccountNumber());
         }
         if (spec.fromCreatedAt() != null) {
             clauses.add("created_at >= ?");

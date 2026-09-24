@@ -3,7 +3,6 @@ package ir.ebb.wallet.repository.transaction;
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
 import ir.ebb.base.jdbc.Jdbc;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.dto.WalletTransactionSpecificationDTO;
 import ir.ebb.wallet.entity.WalletTransactionEntity;
 import lombok.RequiredArgsConstructor;

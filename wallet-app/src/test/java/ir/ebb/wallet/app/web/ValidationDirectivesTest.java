@@ -106,7 +106,7 @@ class ValidationDirectivesTest extends JUnitRouteTest {
         assertThat(errors.errors()).hasSize(3);
         assertThat(errors.errors()).allSatisfy(e -> assertThat(e.code()).isEqualTo(4009));
         // sorted by property path → deterministic payload order
-        assertThat(errors.errors().get(0).message()).startsWith("dbsAccountNumber:");
+        assertThat(errors.errors().get(0).message()).startsWith("accountNumber:");
         assertThat(errors.errors().get(1).message()).startsWith("requestAmount:");
         assertThat(errors.errors().get(2).message()).startsWith("trackingId:");
     }
@@ -117,7 +117,7 @@ class ValidationDirectivesTest extends JUnitRouteTest {
     void blankUserIdAndNullAccountNumberRejected() throws Exception {
         BaseErrorResponse errors = errorsOf(routeFor(new WalletRequestDTO(" ", null)).run(HttpRequest.POST("/")));
         assertThat(errors.errors()).hasSize(2);
-        assertThat(errors.errors().get(0).message()).startsWith("dbsAccountNumber:");
+        assertThat(errors.errors().get(0).message()).startsWith("accountNumber:");
         assertThat(errors.errors().get(1).message()).startsWith("userId:");
     }
 

@@ -17,6 +17,6 @@ public class WalletWebServiceImpl implements WalletWebService {
 
     @Override
     public WalletResponseDTO getWalletDetails(UserPrincipal principal) {
-        return WalletTransformer.adapt(walletFacade.getWallet(principal.asUser().getDbsAccountNumber()));
+        return WalletTransformer.adapt(walletFacade.getWallet(principal.asUser()));
     }
 }

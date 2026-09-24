@@ -6,7 +6,6 @@ import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
 import ir.ebb.common.dto.response.PaginatedResponseDTO;
 import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.common.model.user.User;
 import ir.ebb.external.rayan.wallet.dto.RayanInitCreditResponseDTO;
 import ir.ebb.external.rayan.wallet.dto.RayanWalletDTO;
 import ir.ebb.external.rayan.wallet.service.command.RayanWalletCommandService;

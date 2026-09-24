@@ -203,7 +203,7 @@ class WalletProjectionAdapterTest {
 
         Wallet wallet = WalletProjectionAdapter.adapt(aggregate);
 
-        // Regression: accountNumber must come from dbsAccountNumber (it self-assigned 0 before).
+        // Regression: accountNumber must come from accountNumber (it self-assigned 0 before).
         assertThat(wallet.getAccountNumber()).isEqualTo(1234567L);
         assertThat(wallet.getId()).isEqualTo(WALLET_ID);
         assertThat(wallet.getT0().getBalance()).isEqualTo(100L);

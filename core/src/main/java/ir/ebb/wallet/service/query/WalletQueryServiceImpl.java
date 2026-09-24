@@ -5,7 +5,6 @@ import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
 import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import ir.ebb.wallet.dto.WalletSpecificationDTO;
@@ -49,8 +48,8 @@ public class WalletQueryServiceImpl implements WalletQueryService {
     }
 
     @Override
-    public boolean existsWallet(User user) {
-        return walletRepository.findFirstByUser(user).isPresent();
+    public boolean existsWallet(Long dbsAccountNumber) {
+        return walletRepository.findByUser_DbsAccountNumber(user).isPresent();
     }
 
     @Override

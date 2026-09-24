@@ -3,7 +3,6 @@ package ir.ebb.wallet.serialization;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import ir.ebb.wallet.wallet.WalletCommand;
 import ir.ebb.wallet.wallet.WalletReply;

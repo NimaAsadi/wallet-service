@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 public class WalletEntity extends BaseEntityById {
 
-    private long accountNumber;
+    private Long accountNumber;
 
     private WalletParameterEmbedded t0 = new WalletParameterEmbedded();
     private WalletParameterEmbedded t1 = new WalletParameterEmbedded();

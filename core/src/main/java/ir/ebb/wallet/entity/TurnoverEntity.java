@@ -1,7 +1,6 @@
 package ir.ebb.wallet.entity;
 
 import ir.ebb.common.model.base.BaseEntityById;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.TurnoverOperationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,7 +15,7 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 public class TurnoverEntity extends BaseEntityById {
 
-    private User user;
+    private Long accountNumber;
     private UUID walletId;
     private TurnoverOperationType type;
     private Long debit = 0L;
@@ -31,19 +30,19 @@ public class TurnoverEntity extends BaseEntityById {
     private String receiptBankNumber;
     private Long withdrawRayanId;
 
-    public TurnoverEntity(User user, UUID walletId, TurnoverOperationType type, Long credit, UUID trackingId) {
-        this.user = user;
+    public TurnoverEntity(long accountNumber, UUID walletId, TurnoverOperationType type, Long credit, UUID trackingId) {
+        this.accountNumber = accountNumber;
         this.walletId = walletId;
         this.type = type;
         this.credit = credit;
         this.trackingId = trackingId;
     }
 
-    public TurnoverEntity(User user, UUID walletId, TurnoverOperationType type,
+    public TurnoverEntity(long accountNumber, UUID walletId, TurnoverOperationType type,
                           Long debit, Long credit, UUID trackingId,
                           Long tradedQuantity, Long price, Integer tradeNumber,
                           String isin, String companyName, String instrumentName) {
-        this.user = user;
+        this.accountNumber = accountNumber;
         this.walletId = walletId;
         this.type = type;
         this.debit = debit;
@@ -57,9 +56,9 @@ public class TurnoverEntity extends BaseEntityById {
         this.instrumentAfcNormName = instrumentName;
     }
 
-    public TurnoverEntity(User user, UUID walletId, TurnoverOperationType type,
+    public TurnoverEntity(long accountNumber, UUID walletId, TurnoverOperationType type,
                           Long debit, UUID trackingId, Long resultRayanId) {
-        this.user = user;
+        this.accountNumber = accountNumber;
         this.walletId = walletId;
         this.type = type;
         this.debit = debit;
@@ -67,9 +66,9 @@ public class TurnoverEntity extends BaseEntityById {
         this.withdrawRayanId = resultRayanId;
     }
 
-    public TurnoverEntity(User user, UUID walletId, TurnoverOperationType type,
+    public TurnoverEntity(long accountNumber, UUID walletId, TurnoverOperationType type,
                           Long credit, UUID trackingId, String receiptBankNumber) {
-        this.user = user;
+        this.accountNumber = accountNumber;
         this.walletId = walletId;
         this.type = type;
         this.credit = credit;

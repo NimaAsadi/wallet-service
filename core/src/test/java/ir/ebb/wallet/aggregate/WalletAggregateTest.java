@@ -2,7 +2,6 @@ package ir.ebb.wallet.aggregate;
 
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.ApplicationException;
-import ir.ebb.common.model.user.User;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import ir.ebb.wallet.constant.valueobject.Money;
 import ir.ebb.wallet.valueobject.Wallet;

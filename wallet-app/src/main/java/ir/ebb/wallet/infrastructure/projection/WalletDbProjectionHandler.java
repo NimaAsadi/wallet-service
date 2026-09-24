@@ -38,10 +38,10 @@ import java.util.concurrent.CompletionStage;
  * offset.
  *
  * <p><b>Identity is the account number, not the aggregate UUID.</b> The entity id is
- * {@code dbsAccountNumber + yyyyWW} (ISO week — see {@code WalletServiceImpl#entityId}), so a
+ * {@code accountNumber + yyyyWW} (ISO week — see {@code WalletServiceImpl#entityId}), so a
  * <em>new</em> entity (new persistence id) is created per account per week and its
  * {@link WalletCreated} carries a <em>zeroed</em> aggregate. The read model therefore merges all
- * weekly entities of one account into a single row keyed by {@code dbsAccountNumber}: a
+ * weekly entities of one account into a single row keyed by {@code accountNumber}: a
  * {@code WalletCreated} for an account that already has a row is a no-op (never overwrite the
  * accumulated balances with the zeroed weekly snapshot), and every delta event looks the row up
  * by account number — the only key all event types carry (their aggregate UUIDs rotate weekly).
@@ -120,7 +120,7 @@ public class WalletDbProjectionHandler extends R2dbcHandler<EventEnvelope<Wallet
     private CompletionStage<Done> handleWalletCreated(R2dbcSession session, WalletCreated event) {
         var aggregate = Objects.requireNonNull(event.wallet(), "WalletCreated#wallet must not be null");
         Long accountNumber = Objects.requireNonNull(aggregate.getDbsAccountNumber(),
-                "WalletCreated without dbsAccountNumber (lossy aggregate serialization)");
+                "WalletCreated without accountNumber (lossy aggregate serialization)");
         return walletRepository.selectOneByAccountNumberWithDebt(session, accountNumber)
                 .thenCompose(existing -> {
                     if (existing.isPresent()) return CompletableFuture.completedFuture(Done.getInstance());
@@ -139,7 +139,7 @@ public class WalletDbProjectionHandler extends R2dbcHandler<EventEnvelope<Wallet
     }
 
     /**
-     * Applies one delta event to the account's read-model row: load (by {@code dbsAccountNumber})
+     * Applies one delta event to the account's read-model row: load (by {@code accountNumber})
      * → replay the same {@code Wallet} waterfall the aggregate ran → write everything back
      * (wallet UPDATE, {@code wallet_debt} INSERT-if-absent-or-UPDATE, one row per transaction
      * leg) in one sequential, offset-atomic batch.
@@ -150,7 +150,7 @@ public class WalletDbProjectionHandler extends R2dbcHandler<EventEnvelope<Wallet
             EventEnvelope<WalletEvent> envelope,
             ThrowingConsumer<Wallet> applyChanges
     ) {
-        Objects.requireNonNull(dbsAccountNumber, "event without dbsAccountNumber");
+        Objects.requireNonNull(dbsAccountNumber, "event without accountNumber");
         return walletRepository.selectOneByAccountNumberWithDebt(session, dbsAccountNumber)
                 .thenCompose(existing -> {
                     if (existing.isEmpty())

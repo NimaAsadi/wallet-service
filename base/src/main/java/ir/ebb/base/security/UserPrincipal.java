@@ -1,9 +1,6 @@
 package ir.ebb.base.security;
 
-import ir.ebb.common.model.user.User;
-
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * Replaces the dropped {@code ir.ebb.common.utility.SecurityUtil} thread-local.
@@ -11,10 +8,10 @@ import java.util.UUID;
  * Serves both the user audience (via {@link #asUser()}) and the admin audience
  * (via {@code keycloakId}/{@code name} for audit fields).
  */
-public record UserPrincipal(UUID keycloakId, Long dbsAccountNumber, String name, Set<String> authorities) {
+public record UserPrincipal(Long accountNumber, String name, Set<String> authorities) {
 
-    public User asUser() {
-        return User.of(keycloakId, dbsAccountNumber);
+    public long asUser() {
+        return accountNumber;
     }
 
     public boolean hasAuthority(String permission) {

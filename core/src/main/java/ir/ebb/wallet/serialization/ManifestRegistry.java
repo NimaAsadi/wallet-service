@@ -75,9 +75,11 @@ public final class ManifestRegistry {
     }
 
     /**
-     * The wallet protocol registry: all 26 concrete {@code WalletSerializable} types
-     * (commands, events, replies, state). Events/state/snapshots use the {@code wallet-*}
-     * family (the persisted, most-read names); commands use {@code cmd-*}.
+     * The wallet protocol registry: every concrete {@code WalletSerializable} type — both the
+     * legacy {@code wallet.*} protocol (commands, events, replies, state; {@code wallet-*} and
+     * {@code cmd-*} families) and the next-gen {@code actor.*} protocol (commands, events and the
+     * {@code WalletAggregate} state; {@code actor-*} family). One serializer instance (id 700001)
+     * serves both, so one shared registry is required.
      */
     public static final ManifestRegistry WALLET = builder()
             // ── Events (persisted to the journal) ───────────────────────────────────────
@@ -114,17 +116,19 @@ public final class ManifestRegistry {
             // Sealed-permitted reply-to variant (ActorRef<Done>); currently unused by the command
             // handler — registered defensively so the full sealed command surface serializes.
             .register("cmd-deposit2:v1", WalletCommand.Deposit2.class)
-            // ── Next-gen actor events (ir.ebb.wallet.actor.event; journal-persisted) ──────────
-            .register("actor-wallet-created:v1", WalletCreated.class)
+            // ── Next-gen actor protocol (ir.ebb.wallet.actor.*/aggregate) ────────────────
+            // Same serializer instance (id 700001); a distinct "actor-" manifest family keeps
+            // these journal rows instantly distinguishable from legacy "wallet-"/"cmd-" rows.
+            // ── Events (persisted to the journal) ────────────────────────────────────────
+            .register("actor-created:v1", WalletCreated.class)
             .register("actor-deposited:v1", Deposited.class)
             .register("actor-frozen:v1", Frozen.class)
             .register("actor-unfrozen:v1", Unfrozen.class)
             .register("actor-spent:v1", Spent.class)
             .register("actor-withdrew:v1", Withdrew.class)
-            // ── Next-gen actor state (persistence state / embedded in WalletCreated) ─────────
-            // WalletAggregate round-trips via its no-arg constructor + setters (see its javadoc).
-            .register("actor-wallet-aggregate:v1", WalletAggregate.class)
-            // ── Next-gen actor commands (ir.ebb.wallet.actor.command; inter-node ask) ────────
+            // ── State (event payload + the persistence snapshot type) ───────────────────
+            .register("actor-aggregate:v1", WalletAggregate.class)
+            // ── Commands (inter-node via cluster sharding) ──────────────────────────────
             .register("actor-cmd-create-wallet:v1", CreateWallet.class)
             .register("actor-cmd-deposit:v1", Deposit.class)
             .register("actor-cmd-withdraw:v1", Withdraw.class)

@@ -2,7 +2,6 @@ package ir.ebb.wallet.repository;
 
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
-import ir.ebb.common.model.user.User;
 import ir.ebb.base.jdbc.Jdbc;
 import ir.ebb.wallet.dto.WalletSpecificationDTO;
 import ir.ebb.wallet.entity.WalletDebtEntity;
@@ -16,7 +15,6 @@ import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Read-model repository for the {@code wallet}/{@code wallet_debt} projection tables.
@@ -66,11 +64,6 @@ public class WalletRepository {
 
     // ── reads ─────────────────────────────────────────────────────────────────
 
-    public Optional<WalletEntity> findFirstByUser(User user) {
-        return Jdbc.withConn(dataSource, conn ->
-                Jdbc.queryOne(conn, SELECT_WALLET + " WHERE w.user_id = ? AND w.account_number = ? LIMIT 1",
-                        WALLET_MAPPER, user.getKeycloakId(), user.getDbsAccountNumber()));
-    }
 
     public Optional<WalletEntity> findByUser_DbsAccountNumber(long dbsAccountNumber) {
         return Jdbc.withConn(dataSource, conn ->
@@ -169,7 +162,7 @@ public class WalletRepository {
     private static String sortColumn(String property) {
         return switch (property == null ? "createdAt" : property) {
             case "createdAt" -> "w.created_at";
-            case "accountNumber", "dbsAccountNumber" -> "w.account_number";
+            case "accountNumber", "accountNumber" -> "w.account_number";
             case "credit" -> "w.credit";
             case "initialCredit" -> "w.initial_credit";
             default -> "w.created_at";

@@ -52,10 +52,10 @@ public class RayanHttpClient {
         return send(HttpRequest.GET(url).addHeader(auth(token)));
     }
 
-    /** PUT /customers/initialCredit?credit=&dsName=&dbsAccountNumber= → body. */
+    /** PUT /customers/initialCredit?credit=&dsName=&accountNumber= → body. */
     public String initCredit(String token, long credit, int dsName, long dbsAccountNumber) {
         String url = baseUrl + "/customers/initialCredit?credit=" + credit + "&dsName=" + dsName
-                + "&dbsAccountNumber=" + dbsAccountNumber;
+                + "&accountNumber=" + dbsAccountNumber;
         log.atInfo().log("PUT {}", url);
         return send(HttpRequest.PUT(url).addHeader(auth(token)));
     }

@@ -19,11 +19,11 @@ import java.util.List;
 public class CreditHistoryRepository {
 
     private static final String SELECT = """
-            SELECT c.id, c.version, c.user_id, c.account_number, c.amount, c.status,
+            SELECT c.id, c.version, c.account_number, c.amount, c.status,
                    c.created_id, c.created_by, c.error_message, c.created_at, c.updated_at,
                    u.national_code, u.full_name, u.account_name, u.father_name
             FROM credit_history c
-            LEFT JOIN user_info u ON u.user_id = c.user_id AND u.account_number = c.account_number
+            LEFT JOIN user_info u ON u.account_number = c.account_number
             """;
 
     private static final String INSERT = """
