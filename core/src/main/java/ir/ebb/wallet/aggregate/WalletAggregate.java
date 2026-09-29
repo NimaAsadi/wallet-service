@@ -11,14 +11,11 @@ import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import ir.ebb.wallet.constant.valueobject.Money;
 import ir.ebb.wallet.constant.valueobject.WalletParameter;
 import ir.ebb.wallet.valueobject.WalletDebt;
-import ir.ebb.wallet.wallet.WalletSerializable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ir.ebb.wallet.serialization.WalletSerializable;
-
-import lombok.Data;
 
 import java.util.HashSet;
 import java.util.Optional;

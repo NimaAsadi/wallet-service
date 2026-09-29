@@ -14,6 +14,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -86,6 +87,7 @@ public class RepositoryProcessor extends AbstractProcessor {
         String tableName = getTableName(entityName, annotation);
 
         List<FieldElement> fields = getFields(entityElement);
+        warnOnMissingAccessors(entityElement, fields);
 
         // Find primary key info
         FieldInfo primaryKey = findPrimaryKey(fields);
@@ -280,8 +282,7 @@ public class RepositoryProcessor extends AbstractProcessor {
         // Bind updatable fields
         for (int i = 0; i < updatableFields.size(); i++) {
             FieldInfo field = updatableFields.get(i);
-            String fieldName = field.element.getSimpleName();
-            String accessor = getFieldAccessor(entityElement, fieldName);
+            String accessor = getFieldAccessor(entityElement, field);
 
             if (isEnumType(field.element)) {
                 statementBuilder.append("\n    .bind(").append(i).append(", ").append(accessor).append(".name())");
@@ -291,8 +292,7 @@ public class RepositoryProcessor extends AbstractProcessor {
         }
 
         // Bind primary key (last parameter)
-        String pkFieldName = primaryKey.element.getSimpleName();
-        String pkAccessor = getFieldAccessor(entityElement, pkFieldName);
+        String pkAccessor = getFieldAccessor(entityElement, primaryKey);
         statementBuilder.append("\n    .bind(").append(updatableFields.size()).append(", ").append(pkAccessor).append(")");
 
         method.addCode(statementBuilder.toString() + ";\n");
@@ -407,10 +407,9 @@ public class RepositoryProcessor extends AbstractProcessor {
             method.addStatement("$T instance = new $T()", ClassName.get(entityElement), ClassName.get(entityElement));
 
             for (FieldInfo field : allFields) {
-                String fieldName = field.element.getSimpleName();
                 String columnName = field.columnName;
                 String getter = generateRowGetter(field, columnName);
-                method.addStatement("instance.$L = $L", fieldName, getter);
+                method.addStatement("instance.$L($L)", setterName(field.element), getter);
             }
 
             method.addStatement("return instance");
@@ -464,8 +463,7 @@ public class RepositoryProcessor extends AbstractProcessor {
         // Add parameter bindings for insertable fields only
         for (int i = 0; i < insertableFields.size(); i++) {
             FieldInfo field = insertableFields.get(i);
-            String fieldName = field.element.getSimpleName();
-            String accessor = getFieldAccessor(entityElement, fieldName);
+            String accessor = getFieldAccessor(entityElement, field);
 
             // Handle different types appropriately
             if (isEnumType(field.element)) {
@@ -545,11 +543,78 @@ public class RepositoryProcessor extends AbstractProcessor {
         return camelCase.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 
-    private String getFieldAccessor(TypeElement entityElement, String fieldName) {
+    private String getFieldAccessor(TypeElement entityElement, FieldInfo field) {
+        String fieldName = field.element.getSimpleName();
         if (entityElement.getKind() == ElementKind.RECORD) {
             return "entity." + fieldName + "()";
         } else {
-            return "entity." + fieldName;
+            return "entity." + getterName(field.element) + "()";
+        }
+    }
+
+    private String getterName(FieldElement field) {
+        String prefix = field.asType().getKind() == TypeKind.BOOLEAN ? "is" : "get";
+        return prefix + accessorSuffix(field.getSimpleName());
+    }
+
+    private String setterName(FieldElement field) {
+        return "set" + accessorSuffix(field.getSimpleName());
+    }
+
+    /**
+     * Mirrors lombok's accessor capitalization (capitalize the first char unless a second
+     * uppercase char follows, e.g. {@code aName} keeps its lowercase lead) so the emitted
+     * names always match the accessors Lombok generates for the same field.
+     */
+    private static String accessorSuffix(String fieldName) {
+        if (fieldName.isEmpty()) {
+            return fieldName;
+        }
+        char first = fieldName.charAt(0);
+        if (Character.isLowerCase(first)) {
+            boolean secondIsUpper = fieldName.length() > 1
+                && (Character.isUpperCase(fieldName.charAt(1)) || Character.isTitleCase(fieldName.charAt(1)));
+            if (!secondIsUpper) {
+                return Character.toUpperCase(first) + fieldName.substring(1);
+            }
+        }
+        return fieldName;
+    }
+
+    /**
+     * Lenient hint for hand-written (non-Lombok) class entities: the generated repository reads
+     * {@code getFoo()}/{@code isFoo()} and writes {@code setFoo(...)} — never fields — so a missing
+     * accessor only surfaces later as a {@code cannot find symbol} inside the generated source.
+     * Lombok entities are skipped: whether Lombok's generated methods are visible in this
+     * processor's element model depends on processor-path ordering, so checking them would
+     * false-positive.
+     */
+    private void warnOnMissingAccessors(TypeElement entityElement, List<FieldElement> fields) {
+        if (entityElement.getKind() != ElementKind.CLASS) {
+            return;
+        }
+        boolean lombokAnnotated = entityElement.getAnnotationMirrors().stream()
+            .anyMatch(mirror -> mirror.getAnnotationType().toString().startsWith("lombok."));
+        if (lombokAnnotated) {
+            return;
+        }
+        Set<String> methods = entityElement.getEnclosedElements().stream()
+            .filter(e -> e.getKind() == ElementKind.METHOD)
+            .map(e -> e.getSimpleName().toString())
+            .collect(Collectors.toSet());
+        for (FieldElement field : fields) {
+            String suffix = accessorSuffix(field.getSimpleName());
+            String getter = (field.asType().getKind() == TypeKind.BOOLEAN ? "is" : "get") + suffix;
+            if (!methods.contains(getter)) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING,
+                    "no visible " + getter + "(); the generated repository calls conventional accessors — add them (e.g. Lombok @Data)",
+                    entityElement);
+            }
+            if (!methods.contains("set" + suffix)) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING,
+                    "no visible set" + suffix + "(...); the generated repository calls conventional accessors — add them (e.g. Lombok @Data)",
+                    entityElement);
+            }
         }
     }
 

@@ -18,8 +18,9 @@ import java.util.UUID;
  * Maps all seven debt counters persisted in the schema: the three tier-to-tier counters
  * (primitive, NOT NULL) and the four credit/separ-credit counters (boxed, nullable).
  *
- * <p>Generator notes: fields are public because the generated repository (sibling
- * {@code .repository} package) assigns them directly; {@code createdAt}/{@code updatedAt} are
+ * <p>Generator notes: fields are private — the generated repository (sibling {@code .repository}
+ * package) reads and writes them through the Lombok {@code @Data} accessors;
+ * {@code createdAt}/{@code updatedAt} are
  * excluded from INSERT so the schema's {@code now()} defaults apply — every UPDATE binds
  * {@code updatedAt}, so handlers must populate it before {@code updateOne(...)}.
  */
@@ -29,32 +30,32 @@ import java.util.UUID;
 public class WalletDebtEntity {
 
     @Column(name = "wallet_id", primaryKey = true)
-    public UUID walletId;
+    private UUID walletId;
 
     @Column(name = "t2_to_t0_debt")
-    public long t2ToT0Debt = 0L;
+    private long t2ToT0Debt = 0L;
 
     @Column(name = "t2_to_t1_debt")
-    public long t2ToT1Debt = 0L;
+    private long t2ToT1Debt = 0L;
 
     @Column(name = "t1_to_t0_debt")
-    public long t1ToT0Debt = 0L;
+    private long t1ToT0Debt = 0L;
 
     @Column(name = "t2_to_credit_debt")
-    public Long t2ToCreditDebt = 0L;
+    private Long t2ToCreditDebt = 0L;
 
     @Column(name = "t1_to_credit_debt")
-    public Long t1ToCreditDebt = 0L;
+    private Long t1ToCreditDebt = 0L;
 
     @Column(name = "t2_to_separ_credit_debt")
-    public Long t2ToSeparCreditDebt = 0L;
+    private Long t2ToSeparCreditDebt = 0L;
 
     @Column(name = "t1_to_separ_credit_debt")
-    public Long t1ToSeparCreditDebt = 0L;
+    private Long t1ToSeparCreditDebt = 0L;
 
     @Column(insertable = false, updatable = false)
-    public LocalDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @Column(insertable = false)
-    public LocalDateTime updatedAt;
+    private LocalDateTime updatedAt;
 }

@@ -20,8 +20,8 @@ import java.util.UUID;
  * the {@code User} embeddable became {@code userId}/{@code user_id}; everything else maps 1:1.
  * Primitives for NOT NULL columns, boxed {@code Long} for the nullable before/after audit columns.
  *
- * <p>Generator notes: fields are public because the generated repository (sibling
- * {@code .repository} package) assigns them directly; the enum columns are nullable in the schema
+ * <p>Generator notes: fields are private — the generated repository (sibling {@code .repository}
+ * package) reads and writes them through the Lombok {@code @Data} accessors; the enum columns are nullable in the schema
  * but the generated {@code mapRow} does unguarded {@code valueOf} — NULL values would NPE on read
  * (this projection always writes all three; override {@code mapRow} in a hand-written subclass if
  * legacy NULL rows appear); {@code createdAt}/{@code updatedAt} are excluded from INSERT so the
@@ -33,35 +33,35 @@ import java.util.UUID;
 @GenerateRepository(table = "wallet_transaction")
 public class WalletTransactionEntity {
 
-    public UUID id;
+    private UUID id;
 
-    public long version = 0L;
+    private long version = 0L;
 
-    public long accountNumber = 0L;
+    private long accountNumber = 0L;
 
-    public UUID walletId;
+    private UUID walletId;
 
-    public WalletOperationType walletOperationType;
+    private WalletOperationType walletOperationType;
 
-    public WalletTransactionType walletTransactionType;
+    private WalletTransactionType walletTransactionType;
 
-    public WalletParameterType walletParameterType;
+    private WalletParameterType walletParameterType;
 
-    public long amount = 0L;
+    private long amount = 0L;
 
-    public UUID trackingId;
+    private UUID trackingId;
 
-    public Long frozenBefore;
+    private Long frozenBefore;
 
-    public Long frozenAfter;
+    private Long frozenAfter;
 
-    public Long balanceBefore;
+    private Long balanceBefore;
 
-    public Long balanceAfter;
+    private Long balanceAfter;
 
     @Column(insertable = false, updatable = false)
-    public LocalDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @Column(insertable = false)
-    public LocalDateTime updatedAt;
+    private LocalDateTime updatedAt;
 }

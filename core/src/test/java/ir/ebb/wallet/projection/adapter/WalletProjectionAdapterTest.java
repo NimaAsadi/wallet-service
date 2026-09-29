@@ -51,21 +51,21 @@ class WalletProjectionAdapterTest {
 
         WalletEntity entity = WalletProjectionAdapter.adapt(wallet);
 
-        assertThat(entity.id).isEqualTo(WALLET_ID);
-        assertThat(entity.version).isEqualTo(7L);
-        assertThat(entity.accountNumber).isEqualTo(1234567L);
-        assertThat(entity.t0Balance).isEqualTo(100L);
-        assertThat(entity.t0Frozen).isEqualTo(40L);
-        assertThat(entity.t1Balance).isEqualTo(200L);
-        assertThat(entity.t1Frozen).isZero();
-        assertThat(entity.t2Balance).isEqualTo(300L);
-        assertThat(entity.t2Frozen).isEqualTo(60L);
-        assertThat(entity.credit).isEqualTo(11L);
-        assertThat(entity.initialCredit).isEqualTo(22L);
-        assertThat(entity.separCredit).isEqualTo(33L);
-        assertThat(entity.separInitialCredit).isEqualTo(44L);
-        assertThat(entity.createdAt).isNull();
-        assertThat(entity.updatedAt).isNull();
+        assertThat(entity.getId()).isEqualTo(WALLET_ID);
+        assertThat(entity.getVersion()).isEqualTo(7L);
+        assertThat(entity.getAccountNumber()).isEqualTo(1234567L);
+        assertThat(entity.getT0Balance()).isEqualTo(100L);
+        assertThat(entity.getT0Frozen()).isEqualTo(40L);
+        assertThat(entity.getT1Balance()).isEqualTo(200L);
+        assertThat(entity.getT1Frozen()).isZero();
+        assertThat(entity.getT2Balance()).isEqualTo(300L);
+        assertThat(entity.getT2Frozen()).isEqualTo(60L);
+        assertThat(entity.getCredit()).isEqualTo(11L);
+        assertThat(entity.getInitialCredit()).isEqualTo(22L);
+        assertThat(entity.getSeparCredit()).isEqualTo(33L);
+        assertThat(entity.getSeparInitialCredit()).isEqualTo(44L);
+        assertThat(entity.getCreatedAt()).isNull();
+        assertThat(entity.getUpdatedAt()).isNull();
     }
 
     @Test
@@ -75,19 +75,19 @@ class WalletProjectionAdapterTest {
 
         WalletEntity entity = WalletProjectionAdapter.adapt(wallet);
 
-        assertThat(entity.id).isNull();
-        assertThat(entity.version).isZero();
-        assertThat(entity.accountNumber).isZero();
-        assertThat(entity.t0Balance).isZero();
-        assertThat(entity.t0Frozen).isZero();
-        assertThat(entity.t1Balance).isZero();
-        assertThat(entity.t1Frozen).isZero();
-        assertThat(entity.t2Balance).isZero();
-        assertThat(entity.t2Frozen).isZero();
-        assertThat(entity.credit).isZero();
-        assertThat(entity.initialCredit).isZero();
-        assertThat(entity.separCredit).isZero();
-        assertThat(entity.separInitialCredit).isZero();
+        assertThat(entity.getId()).isNull();
+        assertThat(entity.getVersion()).isZero();
+        assertThat(entity.getAccountNumber()).isZero();
+        assertThat(entity.getT0Balance()).isZero();
+        assertThat(entity.getT0Frozen()).isZero();
+        assertThat(entity.getT1Balance()).isZero();
+        assertThat(entity.getT1Frozen()).isZero();
+        assertThat(entity.getT2Balance()).isZero();
+        assertThat(entity.getT2Frozen()).isZero();
+        assertThat(entity.getCredit()).isZero();
+        assertThat(entity.getInitialCredit()).isZero();
+        assertThat(entity.getSeparCredit()).isZero();
+        assertThat(entity.getSeparInitialCredit()).isZero();
     }
 
     @Test
@@ -99,12 +99,12 @@ class WalletProjectionAdapterTest {
 
         WalletDebtEntity entity = WalletProjectionAdapter.adapt(debt, WALLET_ID);
 
-        assertThat(entity.walletId).isEqualTo(WALLET_ID);
-        assertThat(entity.t2ToT0Debt).isEqualTo(5L);
-        assertThat(entity.t2ToT1Debt).isEqualTo(6L);
-        assertThat(entity.t1ToT0Debt).isEqualTo(7L);
-        assertThat(entity.createdAt).isNull();
-        assertThat(entity.updatedAt).isNull();
+        assertThat(entity.getWalletId()).isEqualTo(WALLET_ID);
+        assertThat(entity.getT2ToT0Debt()).isEqualTo(5L);
+        assertThat(entity.getT2ToT1Debt()).isEqualTo(6L);
+        assertThat(entity.getT1ToT0Debt()).isEqualTo(7L);
+        assertThat(entity.getCreatedAt()).isNull();
+        assertThat(entity.getUpdatedAt()).isNull();
     }
 
     @Test
@@ -125,19 +125,19 @@ class WalletProjectionAdapterTest {
 
         WalletTransactionEntity entity = WalletProjectionAdapter.adapt(transaction);
 
-        assertThat(entity.accountNumber).isEqualTo(1234567L);
-        assertThat(entity.walletId).isEqualTo(WALLET_ID);
-        assertThat(entity.walletOperationType).isEqualTo(WalletOperationType.FREEZE);
-        assertThat(entity.walletTransactionType).isEqualTo(WalletTransactionType.BANK_GATEWAY);
-        assertThat(entity.walletParameterType).isEqualTo(WalletParameterType.T0);
-        assertThat(entity.amount).isEqualTo(500L);
-        assertThat(entity.trackingId).isEqualTo(TRACKING_ID);
-        assertThat(entity.frozenBefore).isEqualTo(100L);
-        assertThat(entity.frozenAfter).isEqualTo(600L);
-        assertThat(entity.balanceBefore).isEqualTo(1000L);
-        assertThat(entity.balanceAfter).isEqualTo(1000L);
-        assertThat(entity.createdAt).isNull();
-        assertThat(entity.updatedAt).isNull();
+        assertThat(entity.getAccountNumber()).isEqualTo(1234567L);
+        assertThat(entity.getWalletId()).isEqualTo(WALLET_ID);
+        assertThat(entity.getWalletOperationType()).isEqualTo(WalletOperationType.FREEZE);
+        assertThat(entity.getWalletTransactionType()).isEqualTo(WalletTransactionType.BANK_GATEWAY);
+        assertThat(entity.getWalletParameterType()).isEqualTo(WalletParameterType.T0);
+        assertThat(entity.getAmount()).isEqualTo(500L);
+        assertThat(entity.getTrackingId()).isEqualTo(TRACKING_ID);
+        assertThat(entity.getFrozenBefore()).isEqualTo(100L);
+        assertThat(entity.getFrozenAfter()).isEqualTo(600L);
+        assertThat(entity.getBalanceBefore()).isEqualTo(1000L);
+        assertThat(entity.getBalanceAfter()).isEqualTo(1000L);
+        assertThat(entity.getCreatedAt()).isNull();
+        assertThat(entity.getUpdatedAt()).isNull();
     }
 
     @Test
@@ -155,11 +155,11 @@ class WalletProjectionAdapterTest {
 
         WalletTransactionEntity entity = WalletProjectionAdapter.adapt(transaction);
 
-        assertThat(entity.frozenBefore).isNull();
-        assertThat(entity.frozenAfter).isNull();
-        assertThat(entity.balanceBefore).isNull();
-        assertThat(entity.balanceAfter).isNull();
-        assertThat(entity.trackingId).isEqualTo(TRACKING_ID);
+        assertThat(entity.getFrozenBefore()).isNull();
+        assertThat(entity.getFrozenAfter()).isNull();
+        assertThat(entity.getBalanceBefore()).isNull();
+        assertThat(entity.getBalanceAfter()).isNull();
+        assertThat(entity.getTrackingId()).isEqualTo(TRACKING_ID);
     }
 
     @Test
@@ -177,14 +177,14 @@ class WalletProjectionAdapterTest {
 
         // All seven counters must survive: a read-modify-write that dropped any of them would
         // silently zero that column in the read model.
-        assertThat(entity.walletId).isEqualTo(WALLET_ID);
-        assertThat(entity.t2ToT0Debt).isEqualTo(1L);
-        assertThat(entity.t2ToT1Debt).isEqualTo(2L);
-        assertThat(entity.t1ToT0Debt).isEqualTo(3L);
-        assertThat(entity.t2ToCreditDebt).isEqualTo(4L);
-        assertThat(entity.t1ToCreditDebt).isEqualTo(5L);
-        assertThat(entity.t2ToSeparCreditDebt).isEqualTo(6L);
-        assertThat(entity.t1ToSeparCreditDebt).isEqualTo(7L);
+        assertThat(entity.getWalletId()).isEqualTo(WALLET_ID);
+        assertThat(entity.getT2ToT0Debt()).isEqualTo(1L);
+        assertThat(entity.getT2ToT1Debt()).isEqualTo(2L);
+        assertThat(entity.getT1ToT0Debt()).isEqualTo(3L);
+        assertThat(entity.getT2ToCreditDebt()).isEqualTo(4L);
+        assertThat(entity.getT1ToCreditDebt()).isEqualTo(5L);
+        assertThat(entity.getT2ToSeparCreditDebt()).isEqualTo(6L);
+        assertThat(entity.getT1ToSeparCreditDebt()).isEqualTo(7L);
     }
 
     @Test
@@ -219,13 +219,13 @@ class WalletProjectionAdapterTest {
     @Test
     void adaptWalletWithDebtInitsTransactionsAndMapsVersion() {
         WalletEntity walletEntity = new WalletEntity();
-        walletEntity.id = WALLET_ID;
-        walletEntity.version = 7L;
-        walletEntity.accountNumber = 1234567L;
-        walletEntity.t0Balance = 100L;
+        walletEntity.setId(WALLET_ID);
+        walletEntity.setVersion(7L);
+        walletEntity.setAccountNumber(1234567L);
+        walletEntity.setT0Balance(100L);
         WalletDebtEntity debtEntity = new WalletDebtEntity();
-        debtEntity.walletId = WALLET_ID;
-        debtEntity.t1ToT0Debt = 3L;
+        debtEntity.setWalletId(WALLET_ID);
+        debtEntity.setT1ToT0Debt(3L);
 
         Wallet wallet = WalletProjectionAdapter.adapt(new WalletWithDebt(walletEntity, debtEntity));
 
@@ -254,10 +254,10 @@ class WalletProjectionAdapterTest {
         WalletTransactionEntity entity = WalletProjectionAdapter.adapt(transaction, TX_ID);
 
         // Replay idempotency: the handler's deterministic per-event id must be kept, not replaced.
-        assertThat(entity.id).isEqualTo(TX_ID);
-        assertThat(entity.walletId).isEqualTo(WALLET_ID);
-        assertThat(entity.amount).isEqualTo(500L);
-        assertThat(entity.balanceAfter).isEqualTo(500L);
+        assertThat(entity.getId()).isEqualTo(TX_ID);
+        assertThat(entity.getWalletId()).isEqualTo(WALLET_ID);
+        assertThat(entity.getAmount()).isEqualTo(500L);
+        assertThat(entity.getBalanceAfter()).isEqualTo(500L);
     }
 
     @Test

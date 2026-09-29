@@ -84,18 +84,18 @@ public class WalletRepository extends BaseWalletRepository {
         WalletDebtEntity debt = new WalletDebtEntity();
         UUID walletId = row.get("wallet_id", UUID.class);
         if (walletId != null) {
-            debt.walletId = walletId;
-            debt.t2ToT0Debt = row.get("t2_to_t0_debt", Long.class);
-            debt.t2ToT1Debt = row.get("t2_to_t1_debt", Long.class);
-            debt.t1ToT0Debt = row.get("t1_to_t0_debt", Long.class);
-            debt.t2ToCreditDebt = row.get("t2_to_credit_debt", Long.class);
-            debt.t1ToCreditDebt = row.get("t1_to_credit_debt", Long.class);
-            debt.t2ToSeparCreditDebt = row.get("t2_to_separ_credit_debt", Long.class);
-            debt.t1ToSeparCreditDebt = row.get("t1_to_separ_credit_debt", Long.class);
-            debt.createdAt = row.get("debt_created_at", LocalDateTime.class);
-            debt.updatedAt = row.get("debt_updated_at", LocalDateTime.class);
+            debt.setWalletId(walletId);
+            debt.setT2ToT0Debt(row.get("t2_to_t0_debt", Long.class));
+            debt.setT2ToT1Debt(row.get("t2_to_t1_debt", Long.class));
+            debt.setT1ToT0Debt(row.get("t1_to_t0_debt", Long.class));
+            debt.setT2ToCreditDebt(row.get("t2_to_credit_debt", Long.class));
+            debt.setT1ToCreditDebt(row.get("t1_to_credit_debt", Long.class));
+            debt.setT2ToSeparCreditDebt(row.get("t2_to_separ_credit_debt", Long.class));
+            debt.setT1ToSeparCreditDebt(row.get("t1_to_separ_credit_debt", Long.class));
+            debt.setCreatedAt(row.get("debt_created_at", LocalDateTime.class));
+            debt.setUpdatedAt(row.get("debt_updated_at", LocalDateTime.class));
         } else {
-            debt.walletId = wallet.id;
+            debt.setWalletId(wallet.getId());
         }
         return new WalletWithDebt(wallet, debt);
     }

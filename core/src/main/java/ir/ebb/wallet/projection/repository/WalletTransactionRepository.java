@@ -33,19 +33,19 @@ public class WalletTransactionRepository extends BaseWalletTransactionRepository
     @Override
     public Statement saveStatement(R2dbcSession session, WalletTransactionEntity entity) {
         Statement statement = session.createStatement(INSERT_STATEMENT)
-                .bind(0, Objects.requireNonNull(entity.id, "id"))
-                .bind(1, entity.version)
-                .bind(2, entity.accountNumber)
-                .bind(3, Objects.requireNonNull(entity.walletId, "walletId"))
-                .bind(4, Objects.requireNonNull(entity.walletOperationType, "walletOperationType").name())
-                .bind(5, Objects.requireNonNull(entity.walletTransactionType, "walletTransactionType").name())
-                .bind(6, Objects.requireNonNull(entity.walletParameterType, "walletParameterType").name())
-                .bind(7, entity.amount);
-        bindNullable(statement, 8, entity.trackingId);
-        bindNullable(statement, 9, entity.frozenBefore);
-        bindNullable(statement, 10, entity.frozenAfter);
-        bindNullable(statement, 11, entity.balanceBefore);
-        bindNullable(statement, 12, entity.balanceAfter);
+                .bind(0, Objects.requireNonNull(entity.getId(), "id"))
+                .bind(1, entity.getVersion())
+                .bind(2, entity.getAccountNumber())
+                .bind(3, Objects.requireNonNull(entity.getWalletId(), "walletId"))
+                .bind(4, Objects.requireNonNull(entity.getWalletOperationType(), "walletOperationType").name())
+                .bind(5, Objects.requireNonNull(entity.getWalletTransactionType(), "walletTransactionType").name())
+                .bind(6, Objects.requireNonNull(entity.getWalletParameterType(), "walletParameterType").name())
+                .bind(7, entity.getAmount());
+        bindNullable(statement, 8, entity.getTrackingId());
+        bindNullable(statement, 9, entity.getFrozenBefore());
+        bindNullable(statement, 10, entity.getFrozenAfter());
+        bindNullable(statement, 11, entity.getBalanceBefore());
+        bindNullable(statement, 12, entity.getBalanceAfter());
         return statement;
     }
 

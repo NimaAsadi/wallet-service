@@ -59,33 +59,33 @@ class WalletRepositoryTest {
         WalletWithDebt pair = repository.mapRowWithDebt(fakeRow(values));
 
         var wallet = pair.wallet();
-        assertThat(wallet.id).isEqualTo(WALLET_ID);
-        assertThat(wallet.version).isEqualTo(7L);
-        assertThat(wallet.accountNumber).isEqualTo(1234567L);
-        assertThat(wallet.t0Balance).isEqualTo(100L);
-        assertThat(wallet.t0Frozen).isEqualTo(40L);
-        assertThat(wallet.t1Balance).isEqualTo(200L);
-        assertThat(wallet.t1Frozen).isZero();
-        assertThat(wallet.t2Balance).isEqualTo(300L);
-        assertThat(wallet.t2Frozen).isEqualTo(60L);
-        assertThat(wallet.credit).isEqualTo(11L);
-        assertThat(wallet.initialCredit).isEqualTo(22L);
-        assertThat(wallet.separCredit).isEqualTo(33L);
-        assertThat(wallet.separInitialCredit).isEqualTo(44L);
-        assertThat(wallet.createdAt).isEqualTo(walletCreatedAt);
-        assertThat(wallet.updatedAt).isEqualTo(walletUpdatedAt);
+        assertThat(wallet.getId()).isEqualTo(WALLET_ID);
+        assertThat(wallet.getVersion()).isEqualTo(7L);
+        assertThat(wallet.getAccountNumber()).isEqualTo(1234567L);
+        assertThat(wallet.getT0Balance()).isEqualTo(100L);
+        assertThat(wallet.getT0Frozen()).isEqualTo(40L);
+        assertThat(wallet.getT1Balance()).isEqualTo(200L);
+        assertThat(wallet.getT1Frozen()).isZero();
+        assertThat(wallet.getT2Balance()).isEqualTo(300L);
+        assertThat(wallet.getT2Frozen()).isEqualTo(60L);
+        assertThat(wallet.getCredit()).isEqualTo(11L);
+        assertThat(wallet.getInitialCredit()).isEqualTo(22L);
+        assertThat(wallet.getSeparCredit()).isEqualTo(33L);
+        assertThat(wallet.getSeparInitialCredit()).isEqualTo(44L);
+        assertThat(wallet.getCreatedAt()).isEqualTo(walletCreatedAt);
+        assertThat(wallet.getUpdatedAt()).isEqualTo(walletUpdatedAt);
 
         var debt = pair.walletDebt();
-        assertThat(debt.walletId).isEqualTo(WALLET_ID);
-        assertThat(debt.t2ToT0Debt).isEqualTo(5L);
-        assertThat(debt.t2ToT1Debt).isEqualTo(6L);
-        assertThat(debt.t1ToT0Debt).isEqualTo(7L);
-        assertThat(debt.t2ToCreditDebt).isEqualTo(8L);
-        assertThat(debt.t1ToCreditDebt).isEqualTo(9L);
-        assertThat(debt.t2ToSeparCreditDebt).isEqualTo(10L);
-        assertThat(debt.t1ToSeparCreditDebt).isNull();
-        assertThat(debt.createdAt).isEqualTo(debtCreatedAt);
-        assertThat(debt.updatedAt).isEqualTo(debtUpdatedAt);
+        assertThat(debt.getWalletId()).isEqualTo(WALLET_ID);
+        assertThat(debt.getT2ToT0Debt()).isEqualTo(5L);
+        assertThat(debt.getT2ToT1Debt()).isEqualTo(6L);
+        assertThat(debt.getT1ToT0Debt()).isEqualTo(7L);
+        assertThat(debt.getT2ToCreditDebt()).isEqualTo(8L);
+        assertThat(debt.getT1ToCreditDebt()).isEqualTo(9L);
+        assertThat(debt.getT2ToSeparCreditDebt()).isEqualTo(10L);
+        assertThat(debt.getT1ToSeparCreditDebt()).isNull();
+        assertThat(debt.getCreatedAt()).isEqualTo(debtCreatedAt);
+        assertThat(debt.getUpdatedAt()).isEqualTo(debtUpdatedAt);
     }
 
     @Test
@@ -108,20 +108,20 @@ class WalletRepositoryTest {
 
         WalletWithDebt pair = repository.mapRowWithDebt(fakeRow(values));
 
-        assertThat(pair.wallet().id).isEqualTo(WALLET_ID);
-        assertThat(pair.wallet().t0Balance).isEqualTo(10L);
+        assertThat(pair.wallet().getId()).isEqualTo(WALLET_ID);
+        assertThat(pair.wallet().getT0Balance()).isEqualTo(10L);
 
         var debt = pair.walletDebt();
-        assertThat(debt.walletId).isEqualTo(WALLET_ID);
-        assertThat(debt.t2ToT0Debt).isZero();
-        assertThat(debt.t2ToT1Debt).isZero();
-        assertThat(debt.t1ToT0Debt).isZero();
-        assertThat(debt.t2ToCreditDebt).isZero();
-        assertThat(debt.t1ToCreditDebt).isZero();
-        assertThat(debt.t2ToSeparCreditDebt).isZero();
-        assertThat(debt.t1ToSeparCreditDebt).isZero();
-        assertThat(debt.createdAt).isNull();
-        assertThat(debt.updatedAt).isNull();
+        assertThat(debt.getWalletId()).isEqualTo(WALLET_ID);
+        assertThat(debt.getT2ToT0Debt()).isZero();
+        assertThat(debt.getT2ToT1Debt()).isZero();
+        assertThat(debt.getT1ToT0Debt()).isZero();
+        assertThat(debt.getT2ToCreditDebt()).isZero();
+        assertThat(debt.getT1ToCreditDebt()).isZero();
+        assertThat(debt.getT2ToSeparCreditDebt()).isZero();
+        assertThat(debt.getT1ToSeparCreditDebt()).isZero();
+        assertThat(debt.getCreatedAt()).isNull();
+        assertThat(debt.getUpdatedAt()).isNull();
     }
 
     /**
