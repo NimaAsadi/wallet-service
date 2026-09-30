@@ -48,12 +48,12 @@ public class JwtVerifier {
         try {
             String token = authorizationHeader.substring(7);
             JWTClaimsSet claims = processor.process(token, null);
-            UUID keycloakId = claims.getSubject() != null ? UUID.fromString(claims.getSubject()) : null;
+
             Long dbsAccountNumber = claims.getLongClaim("dbs_account_number");
             String name = claims.getStringClaim("preferred_username");
             List<String> authorities = claims.getStringListClaim("authorities");
             Set<String> auths = authorities == null ? Set.of() : new HashSet<>(authorities);
-            return new UserPrincipal(keycloakId, dbsAccountNumber, name, auths);
+            return new UserPrincipal( dbsAccountNumber, name, auths);
         } catch (Exception e) {
             log.debug("JWT verification failed: {}", e.getMessage());
             return null;

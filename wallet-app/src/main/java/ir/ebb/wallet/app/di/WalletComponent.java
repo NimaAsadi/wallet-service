@@ -7,8 +7,7 @@ import ir.ebb.wallet.app.web.GrpcServer;
 import ir.ebb.wallet.app.web.WalletHttpServer;
 import ir.ebb.wallet.app.web.WalletJobs;
 import ir.ebb.wallet.infrastructure.projection.WalletDbProjection;
-import ir.ebb.wallet.repository.WalletRepository;
-import ir.ebb.wallet.wallet.WalletFacade;
+import ir.ebb.wallet.projection.repository.WalletRepository;
 import org.apache.pekko.actor.typed.ActorSystem;
 
 import javax.inject.Singleton;
@@ -46,5 +45,5 @@ public interface WalletComponent {
     // ── shutdown-hook handles + seeder inputs ──────────────────────────────────
     KafkaWalletProducer kafkaWalletProducer();
     WalletRepository walletRepository(); // JDBC read repo — LegacySeeder input
-    WalletFacade walletFacade();
+//    WalletFacade walletFacade();
 }

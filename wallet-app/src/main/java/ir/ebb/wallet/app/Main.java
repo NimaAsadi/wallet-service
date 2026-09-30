@@ -1,14 +1,13 @@
 package ir.ebb.wallet.app;
 
 import com.typesafe.config.Config;
-import ir.ebb.wallet.app.di.DaggerWalletComponent;
+
+import ir.ebb.wallet.actor.WalletActor;
 import ir.ebb.wallet.app.di.WalletComponent;
 import ir.ebb.wallet.app.infra.KafkaWalletProducer;
 import ir.ebb.wallet.app.web.GrpcServer;
 import ir.ebb.wallet.app.web.WalletHttpServer;
 import ir.ebb.wallet.app.web.WalletJobs;
-import ir.ebb.wallet.infrastructure.migration.LegacySeeder;
-import ir.ebb.wallet.wallet.WalletActor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pekko.actor.typed.ActorSystem;
 import org.apache.pekko.cluster.sharding.typed.javadsl.ClusterSharding;
@@ -25,7 +24,7 @@ import java.util.Arrays;
  * Lifecycle orchestration only — all wiring lives in {@link WalletComponent}. Startup order:
  * HikariCP + Liquibase (inside the DataSource binding, forced first) → Pekko {@link ActorSystem}
  * (cluster guardian) → Pekko Management → Cluster Bootstrap → {@link ClusterSharding} (the
- * {@link WalletActor}) → read-model projection → optional legacy seed → HTTP → gRPC → cron
+ * {@link }) → read-model projection → optional legacy seed → HTTP → gRPC → cron
  * jobs, then blocks on ActorSystem termination. A JVM shutdown hook tears everything down in
  * reverse.
  *
