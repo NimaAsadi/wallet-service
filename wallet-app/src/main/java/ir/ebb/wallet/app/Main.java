@@ -18,7 +18,7 @@ import org.apache.pekko.management.cluster.bootstrap.ClusterBootstrap;
 import org.apache.pekko.management.javadsl.PekkoManagement;
 
 import javax.sql.DataSource;
-import java.util.Arrays;
+
 
 /**
  * Lifecycle orchestration only — all wiring lives in {@link WalletComponent}. Startup order:
@@ -57,11 +57,6 @@ public class Main {
         // 3. next-gen wallet read-model projection (WalletActor events → wallet/wallet_debt/wallet_transaction)
         container.walletDbProjection().init();
         log.info("WalletDbProjection initialized for entity type WalletActor");
-
-        // 4. one-off legacy seed (--seed-from-legacy): import existing wallet rows into the journal.
-        if (Arrays.asList(args).contains("--seed-from-legacy")) {
-            LegacySeeder.run(container.walletRepository(), container.walletFacade());
-        }
 
         // 5. HTTP server
         WalletHttpServer httpServer = container.httpServer();

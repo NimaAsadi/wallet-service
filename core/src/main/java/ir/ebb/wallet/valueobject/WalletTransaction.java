@@ -3,7 +3,7 @@ package ir.ebb.wallet.valueobject;
 import ir.ebb.wallet.constant.enumeration.WalletOperationType;
 import ir.ebb.wallet.constant.enumeration.WalletParameterType;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
-import ir.ebb.wallet.entity.WalletTransactionEntity;
+import ir.ebb.wallet.projection.entity.WalletTransactionEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

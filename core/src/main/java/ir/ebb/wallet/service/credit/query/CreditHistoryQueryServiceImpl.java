@@ -3,8 +3,8 @@ package ir.ebb.wallet.service.credit.query;
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
 import ir.ebb.wallet.dto.CreditSpecificationDTO;
-import ir.ebb.wallet.entity.CreditHistoryEntity;
-import ir.ebb.wallet.repository.credit.CreditHistoryRepository;
+import ir.ebb.wallet.projection.entity.CreditHistoryEntity;
+import ir.ebb.wallet.projection.repository.CreditHistoryRepository;
 import lombok.RequiredArgsConstructor;
 
 import javax.inject.Inject;

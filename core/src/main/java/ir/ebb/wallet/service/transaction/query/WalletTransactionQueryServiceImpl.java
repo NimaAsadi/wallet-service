@@ -3,8 +3,8 @@ package ir.ebb.wallet.service.transaction.query;
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
 import ir.ebb.wallet.dto.WalletTransactionSpecificationDTO;
-import ir.ebb.wallet.entity.WalletTransactionEntity;
-import ir.ebb.wallet.repository.transaction.WalletTransactionRepository;
+import ir.ebb.wallet.projection.entity.WalletTransactionEntity;
+import ir.ebb.wallet.projection.repository.WalletTransactionRepository;
 import lombok.RequiredArgsConstructor;
 
 import javax.inject.Inject;

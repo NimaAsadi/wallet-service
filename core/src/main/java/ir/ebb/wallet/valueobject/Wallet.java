@@ -9,8 +9,8 @@ import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import ir.ebb.wallet.constant.valueobject.Money;
 import ir.ebb.wallet.constant.valueobject.WalletParameter;
-import ir.ebb.wallet.entity.WalletDebtEntity;
-import ir.ebb.wallet.entity.WalletEntity;
+import ir.ebb.wallet.projection.entity.WalletDebtEntity;
+import ir.ebb.wallet.projection.entity.WalletEntity;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -179,18 +179,18 @@ public class Wallet {
         };
     }
 
-    public WalletEntity adaptToEntity() {
-        WalletDebtEntity walletDebtEntity = walletDebt.adapt();
-        WalletEntity walletEntity = WalletEntity.of(
-                accountNumber,
-                t0.adapt(), t1.adapt(), t2.adapt(),
-                credit, initialCredit, separCredit, separInitialCredit,
-                walletDebtEntity);
-        walletDebtEntity.setId(id);
-        walletEntity.setId(id);
-        walletEntity.setVersion(version);
-        return walletEntity;
-    }
+//    public WalletEntity adaptToEntity() {
+//        WalletDebtEntity walletDebtEntity = walletDebt.adapt();
+//        WalletEntity walletEntity = WalletEntity.of(
+//                accountNumber,
+//                t0.adapt(), t1.adapt(), t2.adapt(),
+//                credit, initialCredit, separCredit, separInitialCredit,
+//                walletDebtEntity);
+//        walletDebtEntity.setWalletId(id);
+//        walletEntity.setId(id);
+//        walletEntity.setVersion(version);
+//        return walletEntity;
+//    }
 
     public Long getTotalAsset() {
         return t0.getBalance() + t0.getFrozen()

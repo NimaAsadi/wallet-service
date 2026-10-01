@@ -1,9 +1,9 @@
 package ir.ebb.wallet.service.turnover.command;
 
 import ir.ebb.wallet.constant.enumeration.TurnoverOperationType;
-import ir.ebb.wallet.entity.TurnoverEntity;
-import ir.ebb.wallet.entity.WalletEntity;
-import ir.ebb.wallet.repository.turnover.TurnoverRepository;
+import ir.ebb.wallet.projection.entity.TurnoverEntity;
+import ir.ebb.wallet.projection.entity.WalletEntity;
+import ir.ebb.wallet.projection.repository.TurnoverRepository;
 import lombok.RequiredArgsConstructor;
 
 import javax.inject.Inject;
@@ -33,19 +33,18 @@ public class TurnoverCommandServiceImpl implements TurnoverCommandService {
     }
 
     @Override
-    public TurnoverEntity createDeposit(User user, UUID walletId, long amount, UUID trackingId, String receiptBankNumber) {
-        return turnoverRepository.save(
-                new TurnoverEntity(user, walletId, TurnoverOperationType.DEPOSIT, amount, trackingId, receiptBankNumber));
+    public TurnoverEntity createDeposit(Long user, UUID walletId, long amount, UUID trackingId, String receiptBankNumber) {
+        return (TurnoverEntity) turnoverRepository.save(new TurnoverEntity(user, walletId, TurnoverOperationType.DEPOSIT, amount, trackingId, receiptBankNumber));
     }
 
     @Override
-    public TurnoverEntity createWithdraw(User user, UUID walletId, long amount, UUID trackingId, Long rayanId) {
+    public TurnoverEntity createWithdraw(Long user, UUID walletId, long amount, UUID trackingId, Long rayanId) {
         return turnoverRepository.save(
                 new TurnoverEntity(user, walletId, TurnoverOperationType.WITHDRAW, amount, trackingId, rayanId));
     }
 
     @Override
-    public TurnoverEntity createTrade(User user, UUID walletId, TurnoverOperationType type,
+    public TurnoverEntity createTrade(Long user, UUID walletId, TurnoverOperationType type,
                                       long debit, long credit, UUID trackingId,
                                       long quantity, long price, int tradeNumber,
                                       String isin, String companyName, String instrumentName) {
@@ -56,12 +55,9 @@ public class TurnoverCommandServiceImpl implements TurnoverCommandService {
 
     @Override
     public void createRemaining(WalletEntity walletEntity) {
-        long remaining = walletEntity.getT0().getBalance()
-                + walletEntity.getT1().getBalance()
-                + walletEntity.getT2().getBalance();
+        long remaining = walletEntity.getT0Balance() + walletEntity.getT1Balance() + walletEntity.getT2Balance();
         turnoverRepository.save(
                 new TurnoverEntity(
-                        null,
                         walletEntity.getId(),
                         TurnoverOperationType.REMAINING,
                         remaining,

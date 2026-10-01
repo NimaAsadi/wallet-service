@@ -5,11 +5,11 @@ import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
 import ir.ebb.common.exception.handler.BusinessException;
+import ir.ebb.wallet.projection.entity.WalletEntity;
+import ir.ebb.wallet.projection.repository.WalletRepository;
 import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import ir.ebb.wallet.dto.WalletSpecificationDTO;
-import ir.ebb.wallet.entity.WalletEntity;
-import ir.ebb.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,7 +36,7 @@ public class WalletQueryServiceImpl implements WalletQueryService {
 
     @Override
     public WalletEntity getWalletEntity(Long dbsAccountNumber) {
-        return walletRepository.findByUser_DbsAccountNumber(dbsAccountNumber)
+        return walletRepository.findByAccountNumber(dbsAccountNumber)
                 .orElseThrow(() -> new BusinessException(
                         ExceptionConstants.WALLET_NOT_EXIST.getMessage(),
                         ExceptionConstants.WALLET_NOT_EXIST.getCode()));
@@ -49,7 +49,7 @@ public class WalletQueryServiceImpl implements WalletQueryService {
 
     @Override
     public boolean existsWallet(Long dbsAccountNumber) {
-        return walletRepository.findByUser_DbsAccountNumber(user).isPresent();
+        return walletRepository.findByUser_DbsAccountNumber(dbsAccountNumber).isPresent();
     }
 
     @Override
@@ -68,8 +68,8 @@ public class WalletQueryServiceImpl implements WalletQueryService {
     }
 
     @Override
-    public void checkSeparCreditDebt(User user) {
-        if (walletRepository.existsByUserAndSeparCreditLessThanSeparInitialCredit(user)) {
+    public void checkSeparCreditDebt(Long accountNumber) {
+        if (walletRepository.existsByUserAndSeparCreditLessThanSeparInitialCredit(accountNumber)) {
             throw new BusinessException(ExceptionConstants.SEPAR_CREDIT_DEBT);
         }
     }

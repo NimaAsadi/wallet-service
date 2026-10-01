@@ -37,7 +37,7 @@ public class TurnoverEntity {
     @Column(insertable = false)
     private LocalDateTime updatedAt;
 
-    public TurnoverEntity(long accountNumber, UUID walletId, TurnoverOperationType type, Long credit, UUID trackingId) {
+    public TurnoverEntity(Long accountNumber, UUID walletId, TurnoverOperationType type, Long credit, UUID trackingId) {
         this.accountNumber = accountNumber;
         this.walletId = walletId;
         this.type = type;
@@ -46,7 +46,7 @@ public class TurnoverEntity {
     }
 
     public TurnoverEntity(
-            long accountNumber,
+            Long accountNumber,
             UUID walletId,
             TurnoverOperationType type,
             Long debit,
@@ -74,7 +74,7 @@ public class TurnoverEntity {
     }
 
     public TurnoverEntity(
-            long accountNumber,
+            Long accountNumber,
             UUID walletId,
             TurnoverOperationType type,
             Long debit,
@@ -90,7 +90,7 @@ public class TurnoverEntity {
     }
 
     public TurnoverEntity(
-            long accountNumber,
+            Long accountNumber,
             UUID walletId,
             TurnoverOperationType type,
             Long credit,
@@ -103,5 +103,9 @@ public class TurnoverEntity {
         this.credit = credit;
         this.trackingId = trackingId;
         this.receiptBankNumber = receiptBankNumber;
+    }
+
+    public TurnoverEntity(UUID id, TurnoverOperationType turnoverOperationType, long remaining, UUID uuid) {
+
     }
 }

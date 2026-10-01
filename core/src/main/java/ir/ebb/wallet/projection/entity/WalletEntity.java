@@ -67,4 +67,5 @@ public class WalletEntity {
 
     @Column(insertable = false)
     private LocalDateTime updatedAt;
+
 }

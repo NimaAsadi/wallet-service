@@ -6,18 +6,8 @@ import ir.ebb.wallet.actor.command.Freeze;
 import ir.ebb.wallet.actor.command.Spend;
 import ir.ebb.wallet.actor.command.Unfreeze;
 import ir.ebb.wallet.actor.command.Withdraw;
-import ir.ebb.wallet.actor.event.Deposited;
-import ir.ebb.wallet.actor.event.Frozen;
-import ir.ebb.wallet.actor.event.Spent;
-import ir.ebb.wallet.actor.event.Unfrozen;
-import ir.ebb.wallet.actor.event.WalletCreated;
-import ir.ebb.wallet.actor.event.Withdrew;
+import ir.ebb.wallet.actor.event.*;
 import ir.ebb.wallet.aggregate.WalletAggregate;
-import ir.ebb.wallet.wallet.WalletCommand;
-import ir.ebb.wallet.wallet.WalletEvent;
-import ir.ebb.wallet.wallet.WalletReply;
-import ir.ebb.wallet.wallet.WalletState;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -82,40 +72,8 @@ public final class ManifestRegistry {
      * serves both, so one shared registry is required.
      */
     public static final ManifestRegistry WALLET = builder()
-            // ── Events (persisted to the journal) ───────────────────────────────────────
-            .register("wallet-created:v1", WalletEvent.WalletCreated.class)
-            .register("wallet-mutated:v1", WalletEvent.WalletMutated.class)
-            .register("wallet-seeded:v1", WalletEvent.WalletSeeded.class)
-            // Sealed-permitted but presently unused by the event handler (defensive: keep the
-            // full sealed surface serializable so a future revival never throws at the wire).
-            .register("wallet-created2:v1", WalletEvent.WalletCreated2.class)
-            .register("wallet-deposited:v1", WalletEvent.WalletDeposited.class)
-            // ── State (event payloads + the persistence snapshot type) ──────────────────
-            .register("wallet-state:v1", WalletState.class)
-            // ── Replies (inter-node, never persisted) ───────────────────────────────────
-            .register("wallet-snapshot:v1", WalletReply.WalletSnapshot.class)
-            .register("wallet-accepted:v1", WalletReply.Accepted.class)
-            .register("wallet-rejected:v1", WalletReply.Rejected.class)
-            .register("wallet-buying-power-result:v1", WalletReply.BuyingPowerResult.class)
-            // ── Commands (inter-node via cluster sharding) ──────────────────────────────
-            .register("cmd-create-wallet:v1", WalletCommand.CreateWallet.class)
-            .register("cmd-deposit:v1", WalletCommand.Deposit.class)
-            .register("cmd-withdraw:v1", WalletCommand.Withdraw.class)
-            .register("cmd-freeze:v1", WalletCommand.Freeze.class)
-            .register("cmd-unfreeze:v1", WalletCommand.Unfreeze.class)
-            .register("cmd-spend:v1", WalletCommand.Spend.class)
-            .register("cmd-freeze-for-t0:v1", WalletCommand.FreezeForT0.class)
-            .register("cmd-spend-t0:v1", WalletCommand.SpendT0.class)
-            .register("cmd-add-credit:v1", WalletCommand.AddCredit.class)
-            .register("cmd-get-wallet:v1", WalletCommand.GetWallet.class)
-            .register("cmd-get-buying-power:v1", WalletCommand.GetBuyingPower.class)
-            .register("cmd-charge-separ-credit:v1", WalletCommand.ChargeSeparCredit.class)
-            .register("cmd-settle-separ-credit:v1", WalletCommand.SettleSeparCredit.class)
-            .register("cmd-reconcile-from-rayan:v1", WalletCommand.ReconcileFromRayan.class)
-            .register("cmd-seed-from-legacy:v1", WalletCommand.SeedFromLegacy.class)
             // Sealed-permitted reply-to variant (ActorRef<Done>); currently unused by the command
             // handler — registered defensively so the full sealed command surface serializes.
-            .register("cmd-deposit2:v1", WalletCommand.Deposit2.class)
             // ── Next-gen actor protocol (ir.ebb.wallet.actor.*/aggregate) ────────────────
             // Same serializer instance (id 700001); a distinct "actor-" manifest family keeps
             // these journal rows instantly distinguishable from legacy "wallet-"/"cmd-" rows.

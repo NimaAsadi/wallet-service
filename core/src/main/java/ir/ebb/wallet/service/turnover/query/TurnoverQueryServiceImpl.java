@@ -3,8 +3,8 @@ package ir.ebb.wallet.service.turnover.query;
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
 import ir.ebb.wallet.dto.TurnoverSpecificationDTO;
-import ir.ebb.wallet.entity.TurnoverEntity;
-import ir.ebb.wallet.repository.turnover.TurnoverRepository;
+import ir.ebb.wallet.projection.entity.TurnoverEntity;
+import ir.ebb.wallet.projection.repository.TurnoverRepository;
 import lombok.RequiredArgsConstructor;
 
 import javax.inject.Inject;

@@ -1,7 +1,7 @@
 package ir.ebb.wallet.valueobject;
 
 import ir.ebb.common.constant.enumeration.SettlementDelay;
-import ir.ebb.wallet.entity.WalletDebtEntity;
+import ir.ebb.wallet.projection.entity.WalletDebtEntity;
 import lombok.Data;
 
 @Data
@@ -53,9 +53,9 @@ public class WalletDebt {
 
     public WalletDebtEntity adapt() {
         WalletDebtEntity entity = new WalletDebtEntity();
-        entity.setT2Tot0Debt(t2Tot0Debt);
-        entity.setT2Tot1Debt(t2Tot1Debt);
-        entity.setT1Tot0Debt(t1Tot0Debt);
+        entity.setT2ToT0Debt(t2Tot0Debt);
+        entity.setT2ToT1Debt(t2Tot1Debt);
+        entity.setT1ToT0Debt(t1Tot0Debt);
         entity.setT2ToCreditDebt(t2ToCreditDebt);
         entity.setT1ToCreditDebt(t1ToCreditDebt);
         entity.setT2ToSeparCreditDebt(t2ToSeparCreditDebt);

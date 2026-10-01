@@ -1,7 +1,6 @@
 package ir.ebb.wallet.constant.valueobject;
 
 import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.wallet.entity.WalletParameterEmbedded;
 import lombok.Data;
 
 @Data
@@ -21,9 +20,5 @@ public class WalletParameter {
         }
         this.balance = balance;
         this.frozen = frozen;
-    }
-
-    public WalletParameterEmbedded adapt() {
-        return new WalletParameterEmbedded(balance, frozen);
     }
 }

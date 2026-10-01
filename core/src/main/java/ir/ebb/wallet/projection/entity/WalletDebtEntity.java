@@ -33,13 +33,13 @@ public class WalletDebtEntity {
     private UUID walletId;
 
     @Column(name = "t2_to_t0_debt")
-    private long t2ToT0Debt = 0L;
+    private Long t2ToT0Debt = 0L;
 
     @Column(name = "t2_to_t1_debt")
-    private long t2ToT1Debt = 0L;
+    private Long t2ToT1Debt = 0L;
 
     @Column(name = "t1_to_t0_debt")
-    private long t1ToT0Debt = 0L;
+    private Long t1ToT0Debt = 0L;
 
     @Column(name = "t2_to_credit_debt")
     private Long t2ToCreditDebt = 0L;
