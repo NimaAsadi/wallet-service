@@ -1,7 +1,7 @@
 package ir.ebb.wallet.app.bridge.transformer;
 
 import ir.ebb.wallet.app.bridge.dto.response.BridgeTurnoverResponseDTO;
-import ir.ebb.wallet.entity.TurnoverEntity;
+import ir.ebb.wallet.projection.entity.TurnoverEntity;
 
 import java.time.ZoneOffset;
 import java.util.List;

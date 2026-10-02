@@ -1,32 +1,31 @@
 package ir.ebb.wallet.service.query;
 
-import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.dto.request.PageRequest;
 import ir.ebb.common.dto.response.Page;
-import ir.ebb.wallet.projection.entity.WalletEntity;
-import ir.ebb.wallet.valueobject.Wallet;
-import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import ir.ebb.wallet.dto.WalletSpecificationDTO;
+import ir.ebb.wallet.projection.entity.WalletEntity;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
+/**
+ * Bulk/list reads over the {@code wallet} read-model tables (blocking JDBC on the blocking
+ * dispatcher). Single-wallet reads are NOT here — {@code WalletService.getWallet/getBuyingPower}
+ * serves those strongly-consistent from the sharded entity.
+ */
 public interface WalletQueryService {
 
-    List<WalletEntity> findAll();
+    CompletionStage<List<WalletEntity>> findAll();
 
-    Page<WalletEntity> findAll(WalletSpecificationDTO walletSpecificationDTO, PageRequest page);
+    CompletionStage<Page<WalletEntity>> findAll(WalletSpecificationDTO walletSpecificationDTO, PageRequest page);
 
-    WalletEntity getWalletEntity(Long accountNumber);
+    CompletionStage<WalletEntity> getWalletEntity(Long accountNumber);
 
-    Wallet getWallet(Long accountNumber);
+    CompletionStage<Boolean> existsWallet(Long accountNumber);
 
-    boolean existsWallet(Long accountNumber);
+    CompletionStage<List<WalletEntity>> getWalletEntities(WalletSpecificationDTO walletSpecificationDTO);
 
-    BuyingPower getBuyingPower(Long accountNumber, SettlementDelay settlementDelay);
+    CompletionStage<List<WalletEntity>> getSeparCreditDebtorUsers();
 
-    List<WalletEntity> getWalletEntities(WalletSpecificationDTO walletSpecificationDTO);
-
-    List<WalletEntity> getSeparCreditDebtorUsers();
-
-    void checkSeparCreditDebt(Long accountNumber);
+    CompletionStage<Void> checkSeparCreditDebt(Long accountNumber);
 }

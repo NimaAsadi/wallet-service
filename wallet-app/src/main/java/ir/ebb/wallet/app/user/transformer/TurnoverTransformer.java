@@ -2,7 +2,7 @@ package ir.ebb.wallet.app.user.transformer;
 
 import ir.ebb.wallet.app.user.dto.response.TurnoverResponseDTO;
 import ir.ebb.wallet.constant.enumeration.TurnoverOperationType;
-import ir.ebb.wallet.entity.TurnoverEntity;
+import ir.ebb.wallet.projection.entity.TurnoverEntity;
 
 import java.util.List;
 

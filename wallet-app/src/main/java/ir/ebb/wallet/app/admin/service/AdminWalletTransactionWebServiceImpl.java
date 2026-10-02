@@ -6,10 +6,13 @@ import ir.ebb.wallet.app.admin.dto.response.WalletTransactionResponseDTO;
 import ir.ebb.wallet.app.admin.transformer.WalletTransactionTransformer;
 import ir.ebb.wallet.service.transaction.query.WalletTransactionQueryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.concurrent.CompletionStage;
 
+@Slf4j
 @Singleton
 @RequiredArgsConstructor(onConstructor_ = @Inject)
 public class AdminWalletTransactionWebServiceImpl implements AdminWalletTransactionWebService {
@@ -17,10 +20,9 @@ public class AdminWalletTransactionWebServiceImpl implements AdminWalletTransact
     private final WalletTransactionQueryService walletTransactionQueryService;
 
     @Override
-    public PaginatedResponseDTO<WalletTransactionResponseDTO> searchWalletTransaction(WalletTransactionSearchRequestDTO request) {
-        return new PaginatedResponseDTO<>(
-                walletTransactionQueryService.findAll(WalletTransactionTransformer.adapt(request), request.toPageRequest()),
-                WalletTransactionTransformer::adapt
-        );
+    public CompletionStage<PaginatedResponseDTO<WalletTransactionResponseDTO>> searchWalletTransaction(WalletTransactionSearchRequestDTO request) {
+        return walletTransactionQueryService
+                .findAll(WalletTransactionTransformer.adapt(request), request.toPageRequest())
+                .thenApply(page -> new PaginatedResponseDTO<>(page, WalletTransactionTransformer::adapt));
     }
 }

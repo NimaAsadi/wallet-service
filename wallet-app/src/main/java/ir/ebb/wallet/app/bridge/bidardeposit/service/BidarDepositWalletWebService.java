@@ -6,13 +6,15 @@ import ir.ebb.wallet.app.bridge.bidardeposit.dto.request.BidarDepositWalletSpend
 import ir.ebb.wallet.app.bridge.bidardeposit.dto.request.BidarDepositWalletUnfreezeRequestDTO;
 import ir.ebb.wallet.app.bridge.bidardeposit.dto.response.BidarDepositWalletResponseDTO;
 
+import java.util.concurrent.CompletionStage;
+
 public interface BidarDepositWalletWebService {
 
-    BidarDepositWalletResponseDTO deposit(BidarDepositWalletDepositRequestDTO request);
+    CompletionStage<BidarDepositWalletResponseDTO> deposit(BidarDepositWalletDepositRequestDTO request);
 
-    BidarDepositWalletResponseDTO freeze(BidarDepositWalletFreezeRequestDTO request);
+    CompletionStage<BidarDepositWalletResponseDTO> freeze(BidarDepositWalletFreezeRequestDTO request);
 
-    BidarDepositWalletResponseDTO unfreeze(BidarDepositWalletUnfreezeRequestDTO request);
+    CompletionStage<BidarDepositWalletResponseDTO> unfreeze(BidarDepositWalletUnfreezeRequestDTO request);
 
-    BidarDepositWalletResponseDTO spend(BidarDepositWalletSpendRequestDTO request);
+    CompletionStage<BidarDepositWalletResponseDTO> spend(BidarDepositWalletSpendRequestDTO request);
 }

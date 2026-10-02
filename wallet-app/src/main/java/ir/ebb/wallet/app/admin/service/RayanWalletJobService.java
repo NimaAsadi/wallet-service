@@ -8,6 +8,4 @@ import java.util.Map;
 public interface RayanWalletJobService {
 
     void updateFromRayan(Map<Long, RayanWalletDTO> allRayanWallets) throws ApplicationException;
-
-    void syncWallets(Map<Long, RayanWalletDTO> allRayanWallets);
 }

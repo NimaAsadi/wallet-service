@@ -5,7 +5,9 @@ import ir.ebb.common.dto.response.Page;
 import ir.ebb.wallet.dto.CreditSpecificationDTO;
 import ir.ebb.wallet.projection.entity.CreditHistoryEntity;
 
+import java.util.concurrent.CompletionStage;
+
 public interface CreditHistoryQueryService {
 
-    Page<CreditHistoryEntity> findAll(CreditSpecificationDTO specificationDTO, PageRequest pageRequest);
+    CompletionStage<Page<CreditHistoryEntity>> findAll(CreditSpecificationDTO specificationDTO, PageRequest pageRequest);
 }

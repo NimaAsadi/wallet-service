@@ -1,6 +1,7 @@
 package ir.ebb.wallet.infrastructure.projection;
 
 import io.r2dbc.spi.Statement;
+import ir.ebb.wallet.actor.event.CreditAdded;
 import ir.ebb.wallet.actor.event.Deposited;
 import ir.ebb.wallet.actor.event.Frozen;
 import ir.ebb.wallet.actor.event.Spent;
@@ -94,6 +95,8 @@ public class WalletDbProjectionHandler extends R2dbcHandler<EventEnvelope<Wallet
                         wallet -> wallet.unfreeze(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType()));
                 case Withdrew event -> updateWalletByAccountNumber(session, event.dbsAccountNumber(), envelope,
                         wallet -> wallet.withdraw(event.trackingId(), event.value(), event.settlementDelay(), event.walletTransactionType()));
+                case CreditAdded event -> updateWalletByAccountNumber(session, event.dbsAccountNumber(), envelope,
+                        wallet -> wallet.increaseCredit(event.trackingId(), event.value().value()));
                 // WalletEvent is not sealed → a default branch is mandatory. Unknown future event
                 // types are logged and skipped (the offset still advances past them).
                 default -> {

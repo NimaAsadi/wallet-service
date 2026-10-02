@@ -3,19 +3,17 @@ package ir.ebb.wallet.serialization;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
-import ir.ebb.common.model.user.User;
-import ir.ebb.wallet.constant.valueobject.WalletParameter;
-import ir.ebb.wallet.valueobject.WalletDebt;
-import ir.ebb.wallet.valueobject.WalletTransaction;
-import ir.ebb.wallet.constant.enumeration.WalletOperationType;
-import ir.ebb.wallet.constant.enumeration.WalletParameterType;
+import ir.ebb.wallet.actor.WalletSnapshot;
+import ir.ebb.wallet.actor.command.AddCredit;
+import ir.ebb.wallet.actor.command.GetBuyingPower;
+import ir.ebb.wallet.actor.command.GetWallet;
+import ir.ebb.wallet.actor.event.CreditAdded;
+import ir.ebb.wallet.actor.event.Deposited;
 import ir.ebb.wallet.constant.enumeration.WalletTransactionType;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
-import ir.ebb.wallet.wallet.WalletCommand;
-import ir.ebb.wallet.wallet.WalletEvent;
-import ir.ebb.wallet.wallet.WalletReply;
-import ir.ebb.wallet.wallet.WalletSerializable;
-import ir.ebb.wallet.wallet.WalletState;
+import ir.ebb.wallet.constant.valueobject.Money;
+import ir.ebb.wallet.constant.valueobject.WalletParameter;
+import ir.ebb.wallet.valueobject.WalletDebt;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -59,184 +57,6 @@ class FastJsonSerializerTest {
 
     // ── fixtures ───────────────────────────────────────────────────────────────────
 
-    private WalletState sampleState() {
-        return new WalletState(
-                UUID.randomUUID(), 999L,
-                new WalletState.Tier(100L, 20L),
-                new WalletState.Tier(50L, 0L),
-                new WalletState.Tier(0L, 0L),
-                200L, 200L, 30L, 30L,
-                new WalletState.Debt(1L, 2L, 3L, 4L, 5L, 6L, 7L),
-                List.of(UUID.randomUUID(), UUID.randomUUID()));
-    }
-
-    private WalletTransaction leg() {
-        return WalletTransaction.builder()
-                .accountNumber(999L)
-                .walletId(UUID.randomUUID())
-                .walletOperationType(WalletOperationType.DEPOSIT)
-                .walletTransactionType(WalletTransactionType.BANK_GATEWAY)
-                .walletParameterType(WalletParameterType.T0)
-                .amount(100L)
-                .trackingId(UUID.randomUUID())
-                .frozenBefore(0L).frozenAfter(0L)
-                .balanceBefore(0L).balanceAfter(100L)
-                .build();
-    }
-
-    private void assertRoundTrip(Object original) {
-        String manifest = serializer.manifest(original);
-        byte[] bytes = serializer.toBinary(original);
-        Object roundTripped = serializer.fromBinary(bytes, manifest);
-        assertThat(roundTripped).isEqualTo(original);
-    }
-
-    // ── serialize + deserialize ────────────────────────────────────────────────────
-
-    @Test
-    void roundTrips_events() {
-        assertRoundTrip(new WalletEvent.WalletCreated(sampleState()));
-        assertRoundTrip(new WalletEvent.WalletMutated(List.of(leg(), leg()), sampleState()));
-        assertRoundTrip(new WalletEvent.WalletSeeded(sampleState()));
-    }
-
-    @Test
-    void roundTrips_walletState() {
-        assertRoundTrip(sampleState());
-    }
-
-    @Test
-    void roundTrips_replies() {
-        assertRoundTrip(new WalletReply.Accepted(sampleState()));
-        assertRoundTrip(new WalletReply.Rejected("no funds", 4005));
-        assertRoundTrip(new WalletReply.WalletSnapshot(sampleState()));
-        assertRoundTrip(new WalletReply.BuyingPowerResult(new BuyingPower(100L, 200L, 30L)));
-    }
-
-    @Test
-    void roundTrips_fireAndForgetCommands() {
-        assertRoundTrip(new WalletCommand.ChargeSeparCredit(999L, 50L, true));
-        assertRoundTrip(new WalletCommand.SettleSeparCredit(999L));
-        assertRoundTrip(new WalletCommand.ReconcileFromRayan(sampleState()));
-        assertRoundTrip(new WalletCommand.SeedFromLegacy(sampleState()));
-    }
-
-    // ── manifest stability (no class names; versioned; stable forever) ────────────
-
-    @Test
-    void manifest_returnsStableVersionedLiterals() {
-        assertThat(serializer.manifest(new WalletEvent.WalletCreated(sampleState()))).isEqualTo("wallet-created:v1");
-        assertThat(serializer.manifest(new WalletEvent.WalletMutated(List.of(), sampleState()))).isEqualTo("wallet-mutated:v1");
-        assertThat(serializer.manifest(new WalletEvent.WalletSeeded(sampleState()))).isEqualTo("wallet-seeded:v1");
-        assertThat(serializer.manifest(sampleState())).isEqualTo("wallet-state:v1");
-        assertThat(serializer.manifest(new WalletReply.WalletSnapshot(sampleState()))).isEqualTo("wallet-snapshot:v1");
-        assertThat(serializer.manifest(new WalletReply.Rejected("x", 1))).isEqualTo("wallet-rejected:v1");
-        // an ActorRef command's manifest is a registry lookup — needs no serialization to resolve
-        assertThat(serializer.manifest(new WalletCommand.ChargeSeparCredit(1L, 1L, false)))
-                .isEqualTo("cmd-charge-separ-credit:v1");
-        // no manifest must ever contain a Java class name
-        String stateJson = new String(serializer.toBinary(sampleState()), UTF_8);
-        assertThat(stateJson).doesNotContain("@type").doesNotContain("ir.ebb.");
-    }
-
-    // ── schema evolution ───────────────────────────────────────────────────────────
-
-    @Test
-    void versionMigration_transformsOldShapeBeforeBinding() {
-        // Registry where the CURRENT schema is v2; v1 is reachable only via migration.
-        ManifestRegistry regV2 = ManifestRegistry.builder()
-                .register("wallet-state:v2", WalletState.class)
-                .build();
-        // Build v1-shape bytes: a real WalletState serialized, then "accountNumber" renamed to
-        // a legacy key "acct" — simulating an old persisted schema.
-        WalletState state = sampleState();
-        FastJsonSerializer v2Writer = new FastJsonSerializer(null, regV2, Map.of());
-        JSONObject node = JSON.parseObject(new String(v2Writer.toBinary(state), UTF_8));
-        node.put("acct", node.get("accountNumber"));
-        node.remove("accountNumber");
-        byte[] v1Bytes = node.toString().getBytes(UTF_8);
-
-        // Migration v1 -> v2 restores the current field name.
-        Migration rename = new Migration() {
-            @Override public String fromManifest() { return "wallet-state:v1"; }
-            @Override public String toManifest() { return "wallet-state:v2"; }
-            @Override public JSONObject migrate(JSONObject old) {
-                if (old.containsKey("acct")) {
-                    old.put("accountNumber", old.get("acct"));
-                    old.remove("acct");
-                }
-                return old;
-            }
-        };
-        FastJsonSerializer migratable = new FastJsonSerializer(null, regV2, Map.of(rename.fromManifest(), rename));
-
-        WalletState recovered = (WalletState) migratable.fromBinary(v1Bytes, "wallet-state:v1");
-        assertThat(recovered.accountNumber()).isEqualTo(999L);
-
-        // Without the migration, v1 is an unknown manifest (not in the registry) and is rejected.
-        assertThatThrownBy(() -> v2Writer.fromBinary(v1Bytes, "wallet-state:v1"))
-                .isInstanceOf(SerializationException.class)
-                .hasMessageContaining("Unknown manifest");
-    }
-
-    @Test
-    void missingFields_defaultRatherThanFail() {
-        // Forward/backward compatibility: a payload missing a primitive field yields its Java
-        // default (0), a missing object field yields null — deserialization does not fail.
-        byte[] missingCode = "{\"message\":\"oops\"}".getBytes(UTF_8);
-        WalletReply.Rejected noCode = (WalletReply.Rejected) serializer.fromBinary(missingCode, "wallet-rejected:v1");
-        assertThat(noCode.message()).isEqualTo("oops");
-        assertThat(noCode.code()).isZero();
-    }
-
-    @Test
-    void additionalFields_areIgnored() {
-        WalletState state = sampleState();
-        JSONObject node = JSON.parseObject(new String(serializer.toBinary(state), UTF_8));
-        node.put("futureField", 42); // a field added by a newer writer
-        byte[] bytes = node.toString().getBytes(UTF_8);
-
-        WalletState recovered = (WalletState) serializer.fromBinary(bytes, "wallet-state:v1");
-        assertThat(recovered).isEqualTo(state); // extra field tolerated, current type unchanged
-    }
-
-    // ── error handling ─────────────────────────────────────────────────────────────
-
-    @Test
-    void unknownManifest_throwsDescriptiveException() {
-        assertThatThrownBy(() -> serializer.fromBinary("{}".getBytes(UTF_8), "no-such:v1"))
-                .isInstanceOf(SerializationException.class)
-                .hasMessageContaining("Unknown manifest")
-                .hasMessageContaining("no-such:v1");
-    }
-
-    @Test
-    void invalidJson_throwsSerializationException() {
-        assertThatThrownBy(() -> serializer.fromBinary("{not json".getBytes(UTF_8), "wallet-state:v1"))
-                .isInstanceOf(SerializationException.class)
-                .hasMessageContaining("Corrupted or invalid");
-    }
-
-    @Test
-    void corruptedPayload_throwsSerializationException() {
-        // 0x8f is not a valid UTF-8 leading byte; decoding then parsing must fail cleanly.
-        byte[] corrupted = new byte[]{(byte) 0x8f, (byte) '}'};
-        assertThatThrownBy(() -> serializer.fromBinary(corrupted, "wallet-state:v1"))
-                .isInstanceOf(SerializationException.class)
-                .hasMessageContaining("Corrupted or invalid");
-    }
-
-    @Test
-    void enums_serializeByNameNotOrdinal() {
-        // WriteEnumsUsingName must be on: the JSON carries the enum .name(), never its ordinal.
-        String json = new String(
-                serializer.toBinary(new WalletEvent.WalletMutated(List.of(leg()), sampleState())), UTF_8);
-        assertThat(json).contains("BANK_GATEWAY").contains("DEPOSIT").contains("T0");
-        assertThat(json).doesNotContain(SettlementDelay.class.getName());
-    }
-
-    // ── next-gen actor: WalletCreated embeds the event-sourced state (WalletAggregate) ────────
-
     private ir.ebb.wallet.aggregate.WalletAggregate populatedAggregate() {
         var debt = new WalletDebt();
         debt.setT2Tot0Debt(1L);
@@ -254,17 +74,200 @@ class FastJsonSerializerTest {
                 new HashSet<>(List.of(UUID.randomUUID(), UUID.randomUUID())));
     }
 
+    private Deposited deposited() {
+        return new Deposited(UUID.randomUUID(), new Money(100L),
+                SettlementDelay.T_PLUS_0, WalletTransactionType.BANK_GATEWAY, 999L);
+    }
+
+    private void assertRoundTrip(Object original) {
+        String manifest = serializer.manifest(original);
+        byte[] bytes = serializer.toBinary(original);
+        Object roundTripped = serializer.fromBinary(bytes, manifest);
+        assertThat(roundTripped).isEqualTo(original);
+    }
+
+    // ── serialize + deserialize ────────────────────────────────────────────────────
+
+    @Test
+    void roundTrips_events() {
+        // WalletCreated embeds the aggregate, which has identity equals (no Lombok @Data) —
+        // compare its content recursively instead of relying on equals.
+        var created = new ir.ebb.wallet.actor.event.WalletCreated(populatedAggregate());
+        byte[] createdBytes = serializer.toBinary(created);
+        var createdBack = (ir.ebb.wallet.actor.event.WalletCreated)
+                serializer.fromBinary(createdBytes, serializer.manifest(created));
+        assertThat(createdBack.wallet())
+                .usingRecursiveComparison()
+                .isEqualTo(created.wallet());
+
+        assertRoundTrip(deposited());
+        assertRoundTrip(new ir.ebb.wallet.actor.event.Frozen(UUID.randomUUID(), new Money(50L),
+                SettlementDelay.T_PLUS_2, WalletTransactionType.ENTRY_ORDER, false, 999L));
+        assertRoundTrip(new ir.ebb.wallet.actor.event.Unfrozen(UUID.randomUUID(), new Money(50L),
+                SettlementDelay.T_PLUS_2, WalletTransactionType.USER_CANCEL_ORDER, false, 999L));
+        assertRoundTrip(new ir.ebb.wallet.actor.event.Spent(UUID.randomUUID(), new Money(50L),
+                SettlementDelay.T_PLUS_2, WalletTransactionType.COMPLETE_TRADE, false, 999L));
+        assertRoundTrip(new ir.ebb.wallet.actor.event.Withdrew(UUID.randomUUID(), new Money(10L),
+                SettlementDelay.T_PLUS_0, WalletTransactionType.USER_WITHDRAWAL, 999L));
+        assertRoundTrip(new CreditAdded(UUID.randomUUID(), new Money(250L), 999L));
+    }
+
+    @Test
+    void roundTrips_walletAggregate() {
+        var original = populatedAggregate();
+        byte[] bytes = serializer.toBinary(original);
+        var back = (ir.ebb.wallet.aggregate.WalletAggregate)
+                serializer.fromBinary(bytes, serializer.manifest(original));
+        assertThat(back).usingRecursiveComparison().isEqualTo(original);
+    }
+
+    @Test
+    void roundTrips_readReplies() {
+        var aggregate = populatedAggregate();
+        assertRoundTrip(aggregate.toSnapshot());
+        assertRoundTrip(new BuyingPower(100L, 200L, 30L));
+    }
+
+    @Test
+    void roundTrips_commandsWithoutActorRef() {
+        // replyTo is null here (no actor system); the round-trip must keep it null, not fail.
+        UUID trackingId = UUID.randomUUID();
+        assertRoundTrip(new AddCredit(trackingId, new Money(250L), null));
+        assertRoundTrip(new GetWallet(null));
+        assertRoundTrip(new GetBuyingPower(SettlementDelay.T_PLUS_1, null));
+    }
+
+    // ── manifest stability (no class names; versioned; stable forever) ────────────
+
+    @Test
+    void manifest_returnsStableVersionedLiterals() {
+        assertThat(serializer.manifest(new ir.ebb.wallet.actor.event.WalletCreated(populatedAggregate())))
+                .isEqualTo("actor-created:v1");
+        assertThat(serializer.manifest(deposited())).isEqualTo("actor-deposited:v1");
+        assertThat(serializer.manifest(new CreditAdded(UUID.randomUUID(), new Money(1L), 1L)))
+                .isEqualTo("actor-credit-added:v1");
+        assertThat(serializer.manifest(populatedAggregate())).isEqualTo("actor-aggregate:v1");
+        assertThat(serializer.manifest(new AddCredit(UUID.randomUUID(), new Money(1L), null)))
+                .isEqualTo("actor-cmd-add-credit:v1");
+        assertThat(serializer.manifest(new GetWallet(null))).isEqualTo("actor-cmd-get-wallet:v1");
+        assertThat(serializer.manifest(new GetBuyingPower(SettlementDelay.T_PLUS_0, null)))
+                .isEqualTo("actor-cmd-get-buying-power:v1");
+        assertThat(serializer.manifest(populatedAggregate().toSnapshot())).isEqualTo("actor-snapshot:v1");
+        assertThat(serializer.manifest(new BuyingPower(1L, 2L, 3L))).isEqualTo("actor-buying-power:v1");
+        // no manifest must ever contain a Java class name
+        String stateJson = new String(serializer.toBinary(populatedAggregate()), UTF_8);
+        assertThat(stateJson).doesNotContain("@type").doesNotContain("ir.ebb.");
+    }
+
+    // ── schema evolution ───────────────────────────────────────────────────────────
+
+    @Test
+    void versionMigration_transformsOldShapeBeforeBinding() {
+        // Registry where the CURRENT schema is v2; v1 is reachable only via migration.
+        ManifestRegistry regV2 = ManifestRegistry.builder()
+                .register("actor-aggregate:v2", ir.ebb.wallet.aggregate.WalletAggregate.class)
+                .build();
+        // Build v1-shape bytes: a real WalletAggregate serialized, then "credit" renamed to a
+        // legacy key "crd" — simulating an old persisted schema.
+        var aggregate = populatedAggregate();
+        FastJsonSerializer v2Writer = new FastJsonSerializer(null, regV2, Map.of());
+        JSONObject node = JSON.parseObject(new String(v2Writer.toBinary(aggregate), UTF_8));
+        node.put("crd", node.get("credit"));
+        node.remove("credit");
+        byte[] v1Bytes = node.toString().getBytes(UTF_8);
+
+        // Migration v1 -> v2 restores the current field name.
+        Migration rename = new Migration() {
+            @Override public String fromManifest() { return "actor-aggregate:v1"; }
+            @Override public String toManifest() { return "actor-aggregate:v2"; }
+            @Override public JSONObject migrate(JSONObject old) {
+                if (old.containsKey("crd")) {
+                    old.put("credit", old.get("crd"));
+                    old.remove("crd");
+                }
+                return old;
+            }
+        };
+        FastJsonSerializer migratable = new FastJsonSerializer(null, regV2, Map.of(rename.fromManifest(), rename));
+
+        ir.ebb.wallet.aggregate.WalletAggregate recovered =
+                (ir.ebb.wallet.aggregate.WalletAggregate) migratable.fromBinary(v1Bytes, "actor-aggregate:v1");
+        assertThat(recovered.getCredit()).isEqualTo(200L);
+
+        // Without the migration, v1 is an unknown manifest (not in the registry) and is rejected.
+        assertThatThrownBy(() -> v2Writer.fromBinary(v1Bytes, "actor-aggregate:v1"))
+                .isInstanceOf(SerializationException.class)
+                .hasMessageContaining("Unknown manifest");
+    }
+
+    @Test
+    void missingFields_defaultRatherThanFail() {
+        // Forward/backward compatibility: a payload missing fields yields nulls — deserialization
+        // does not fail (a record component absent from the JSON stays null).
+        byte[] minimal = ("{\"trackingId\":\"" + UUID.randomUUID() + "\"}").getBytes(UTF_8);
+        CreditAdded partial = (CreditAdded) serializer.fromBinary(minimal, "actor-credit-added:v1");
+        assertThat(partial.value()).isNull();
+        assertThat(partial.dbsAccountNumber()).isNull();
+    }
+
+    @Test
+    void additionalFields_areIgnored() {
+        var aggregate = populatedAggregate();
+        JSONObject node = JSON.parseObject(new String(serializer.toBinary(aggregate), UTF_8));
+        node.put("futureField", 42); // a field added by a newer writer
+        byte[] bytes = node.toString().getBytes(UTF_8);
+
+        var recovered = (ir.ebb.wallet.aggregate.WalletAggregate) serializer.fromBinary(bytes, "actor-aggregate:v1");
+        assertThat(recovered).usingRecursiveComparison().isEqualTo(aggregate); // extra field tolerated
+    }
+
+    // ── error handling ─────────────────────────────────────────────────────────────
+
+    @Test
+    void unknownManifest_throwsDescriptiveException() {
+        assertThatThrownBy(() -> serializer.fromBinary("{}".getBytes(UTF_8), "no-such:v1"))
+                .isInstanceOf(SerializationException.class)
+                .hasMessageContaining("Unknown manifest")
+                .hasMessageContaining("no-such:v1");
+    }
+
+    @Test
+    void invalidJson_throwsSerializationException() {
+        assertThatThrownBy(() -> serializer.fromBinary("{not json".getBytes(UTF_8), "actor-aggregate:v1"))
+                .isInstanceOf(SerializationException.class)
+                .hasMessageContaining("Corrupted or invalid");
+    }
+
+    @Test
+    void corruptedPayload_throwsSerializationException() {
+        // 0x8f is not a valid UTF-8 leading byte; decoding then parsing must fail cleanly.
+        byte[] corrupted = new byte[]{(byte) 0x8f, (byte) '}'};
+        assertThatThrownBy(() -> serializer.fromBinary(corrupted, "actor-aggregate:v1"))
+                .isInstanceOf(SerializationException.class)
+                .hasMessageContaining("Corrupted or invalid");
+    }
+
+    @Test
+    void enums_serializeByNameNotOrdinal() {
+        // WriteEnumsUsingName must be on: the JSON carries the enum .name(), never its ordinal.
+        String json = new String(serializer.toBinary(deposited()), UTF_8);
+        assertThat(json).contains("BANK_GATEWAY").contains("T_PLUS_0");
+        assertThat(json).doesNotContain(SettlementDelay.class.getName());
+    }
+
+    // ── WalletCreated embeds the event-sourced state (WalletAggregate) ─────────────
+
     @Test
     void roundTrips_actorWalletCreatedWithPopulatedAggregate() {
         var aggregate = populatedAggregate();
         var original = new ir.ebb.wallet.actor.event.WalletCreated(aggregate);
 
         String manifest = serializer.manifest(original);
-        assertThat(manifest).isEqualTo("actor-wallet-created:v1");
+        assertThat(manifest).isEqualTo("actor-created:v1");
 
         byte[] bytes = serializer.toBinary(original);
         String json = new String(bytes, UTF_8);
-        assertThat(json).contains("accountNumber")
+        assertThat(json).contains("dbsAccountNumber")
                 .doesNotContain("@type")
                 .doesNotContain("ir.ebb.");
 
@@ -290,28 +293,31 @@ class FastJsonSerializerTest {
         // The field initializer must hold: a payload without trackingIds (older writer, hand-edit)
         // deserializes to an empty set, never null — WalletAggregate.applyEvent calls
         // trackingIds.add on every event, and a null set would NPE the actor.
-        byte[] bytes = ("{\"wallet\":{\"id\":\"" + UUID.randomUUID() + "\",\"accountNumber\":42}}")
+        byte[] bytes = ("{\"wallet\":{\"id\":\"" + UUID.randomUUID() + "\",\"dbsAccountNumber\":42}}")
                 .getBytes(UTF_8);
 
         var back = (ir.ebb.wallet.actor.event.WalletCreated)
-                serializer.fromBinary(bytes, "actor-wallet-created:v1");
+                serializer.fromBinary(bytes, "actor-created:v1");
 
         assertThat(back.wallet().getTrackingIds()).isNotNull().isEmpty();
         assertThat(back.wallet().getDbsAccountNumber()).isEqualTo(42L);
     }
 
     @Test
-    void roundTrips_actorWalletCreatedViaRegistryStateManifest() {
-        // The aggregate is also persisted standalone (snapshots / state manifest) — prove that
-        // path with its own manifest, not just embedded in WalletCreated.
-        var aggregate = populatedAggregate();
-        assertThat(serializer.manifest(aggregate)).isEqualTo("actor-wallet-aggregate:v1");
+    void snapshot_roundTripsWithDeepCopiedTiers() {
+        // WalletSnapshot must survive the wire with its tier values intact — the aggregate's live
+        // WalletParameter instances are copied at snapshot time and re-created on read.
+        WalletSnapshot snapshot = populatedAggregate().toSnapshot();
 
-        byte[] bytes = serializer.toBinary(aggregate);
-        var back = (ir.ebb.wallet.aggregate.WalletAggregate)
-                serializer.fromBinary(bytes, "actor-wallet-aggregate:v1");
+        byte[] bytes = serializer.toBinary(snapshot);
+        WalletSnapshot back = (WalletSnapshot) serializer.fromBinary(bytes, "actor-snapshot:v1");
 
-        assertThat(back).usingRecursiveComparison().isEqualTo(aggregate);
+        assertThat(back.t0()).isEqualTo(new WalletParameter(100L, 20L));
+        assertThat(back.t1()).isEqualTo(new WalletParameter(50L, 0L));
+        assertThat(back.t2()).isEqualTo(new WalletParameter(0L, 0L));
+        assertThat(back.credit()).isEqualTo(200L);
+        assertThat(back.separInitialCredit()).isEqualTo(30L);
+        assertThat(back.dbsAccountNumber()).isEqualTo(1234567890L);
     }
 
     // ── forward compatibility: value types not (yet) in the protocol ──────────────

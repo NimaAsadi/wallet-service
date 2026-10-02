@@ -9,12 +9,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pure-mapping tests for {@link TurnoverRepository#buildWhere} — no DB: the WHERE text's
- * {@code $n} numbering and the bind-value order must stay in lockstep, and the to-bound keeps
+ * {@code ?} numbering and the bind-value order must stay in lockstep, and the to-bound keeps
  * the legacy inclusive end-of-day conversion.
  */
 class TurnoverRepositoryTest {
 
-    private final TurnoverRepository repository = new TurnoverRepository();
+    private final TurnoverRepository repository = new TurnoverRepository(null);
 
     @Test
     void emptySpecYieldsNoWhereClause() {
@@ -35,7 +35,7 @@ class TurnoverRepositoryTest {
                 .build());
 
         assertThat(where.sql())
-                .isEqualTo(" WHERE account_number = $1 AND created_at >= $2 AND created_at <= $3");
+                .isEqualTo(" WHERE account_number = ? AND created_at >= ? AND created_at <= ?");
         assertThat(where.params()).containsExactly(
                 1234L,
                 from,
@@ -45,17 +45,17 @@ class TurnoverRepositoryTest {
     @Test
     void singleClauseSpecsNumberFromOne() {
         var accountOnly = repository.buildWhere(TurnoverSpecificationDTO.builder().dbsAccountNumber(7L).build());
-        assertThat(accountOnly.sql()).isEqualTo(" WHERE account_number = $1");
+        assertThat(accountOnly.sql()).isEqualTo(" WHERE account_number = ?");
         assertThat(accountOnly.params()).containsExactly(7L);
 
         var fromOnly = repository.buildWhere(TurnoverSpecificationDTO.builder()
                 .fromCreatedAt(LocalDateTime.of(2026, 3, 1, 8, 0)).build());
-        assertThat(fromOnly.sql()).isEqualTo(" WHERE created_at >= $1");
+        assertThat(fromOnly.sql()).isEqualTo(" WHERE created_at >= ?");
         assertThat(fromOnly.params()).containsExactly(LocalDateTime.of(2026, 3, 1, 8, 0));
 
         var toOnly = repository.buildWhere(TurnoverSpecificationDTO.builder()
                 .toCreatedAt(LocalDateTime.of(2026, 3, 5, 8, 0)).build());
-        assertThat(toOnly.sql()).isEqualTo(" WHERE created_at <= $1");
+        assertThat(toOnly.sql()).isEqualTo(" WHERE created_at <= ?");
         assertThat(toOnly.params()).containsExactly(LocalDateTime.of(2026, 3, 5, 23, 59, 59));
     }
 }

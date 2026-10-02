@@ -1,13 +1,18 @@
 package ir.ebb.wallet.serialization;
 
+import ir.ebb.wallet.actor.WalletSnapshot;
+import ir.ebb.wallet.actor.command.AddCredit;
 import ir.ebb.wallet.actor.command.CreateWallet;
 import ir.ebb.wallet.actor.command.Deposit;
 import ir.ebb.wallet.actor.command.Freeze;
+import ir.ebb.wallet.actor.command.GetBuyingPower;
+import ir.ebb.wallet.actor.command.GetWallet;
 import ir.ebb.wallet.actor.command.Spend;
 import ir.ebb.wallet.actor.command.Unfreeze;
 import ir.ebb.wallet.actor.command.Withdraw;
 import ir.ebb.wallet.actor.event.*;
 import ir.ebb.wallet.aggregate.WalletAggregate;
+import ir.ebb.wallet.constant.valueobject.BuyingPower;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -84,6 +89,7 @@ public final class ManifestRegistry {
             .register("actor-unfrozen:v1", Unfrozen.class)
             .register("actor-spent:v1", Spent.class)
             .register("actor-withdrew:v1", Withdrew.class)
+            .register("actor-credit-added:v1", CreditAdded.class)
             // ── State (event payload + the persistence snapshot type) ───────────────────
             .register("actor-aggregate:v1", WalletAggregate.class)
             // ── Commands (inter-node via cluster sharding) ──────────────────────────────
@@ -93,6 +99,12 @@ public final class ManifestRegistry {
             .register("actor-cmd-freeze:v1", Freeze.class)
             .register("actor-cmd-unfreeze:v1", Unfreeze.class)
             .register("actor-cmd-spend:v1", Spend.class)
+            .register("actor-cmd-add-credit:v1", AddCredit.class)
+            .register("actor-cmd-get-wallet:v1", GetWallet.class)
+            .register("actor-cmd-get-buying-power:v1", GetBuyingPower.class)
+            // ── Read replies (ask responses travel the wire too) ────────────────────────
+            .register("actor-snapshot:v1", WalletSnapshot.class)
+            .register("actor-buying-power:v1", BuyingPower.class)
             .build();
 
     /**

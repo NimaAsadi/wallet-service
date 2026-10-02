@@ -2,7 +2,7 @@ package ir.ebb.wallet.app.di;
 
 import com.typesafe.config.Config;
 import dagger.Component;
-import ir.ebb.wallet.app.infra.KafkaWalletProducer;
+import ir.ebb.wallet.infrastructure.KafkaWalletProducer;
 import ir.ebb.wallet.app.web.GrpcServer;
 import ir.ebb.wallet.app.web.WalletHttpServer;
 import ir.ebb.wallet.app.web.WalletJobs;
@@ -42,8 +42,6 @@ public interface WalletComponent {
     GrpcServer grpcServer();
     WalletJobs walletJobs();
 
-    // ── shutdown-hook handles + seeder inputs ──────────────────────────────────
+    // ── shutdown-hook handles ──────────────────────────────────────────────────
     KafkaWalletProducer kafkaWalletProducer();
-    WalletRepository walletRepository(); // JDBC read repo — LegacySeeder input
-//    WalletFacade walletFacade();
 }

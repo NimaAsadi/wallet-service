@@ -1,4 +1,4 @@
-package ir.ebb.wallet.app.infra;
+package ir.ebb.wallet.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;

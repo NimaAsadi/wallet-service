@@ -2,6 +2,10 @@ package ir.ebb.wallet.app.di;
 
 import dagger.Module;
 import dagger.Binds;
+import ir.ebb.wallet.service.WalletService;
+import ir.ebb.wallet.service.WalletServiceImpl;
+import ir.ebb.wallet.service.credit.command.CreditHistoryCommandService;
+import ir.ebb.wallet.service.credit.command.CreditHistoryCommandServiceImpl;
 import ir.ebb.wallet.service.credit.query.CreditHistoryQueryService;
 import ir.ebb.wallet.service.credit.query.CreditHistoryQueryServiceImpl;
 import ir.ebb.wallet.service.query.WalletQueryService;
@@ -13,9 +17,12 @@ import ir.ebb.wallet.service.turnover.command.TurnoverCommandServiceImpl;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryService;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryServiceImpl;
 
-/** Read-side + turnover domain services (core module). */
+/** Write facade + read-side/turnover domain services (core module). */
 @Module
 public abstract class DomainModule {
+
+    @Binds
+    abstract WalletService walletService(WalletServiceImpl impl);
 
     @Binds
     abstract WalletQueryService walletQueryService(WalletQueryServiceImpl impl);
@@ -28,6 +35,9 @@ public abstract class DomainModule {
 
     @Binds
     abstract CreditHistoryQueryService creditHistoryQueryService(CreditHistoryQueryServiceImpl impl);
+
+    @Binds
+    abstract CreditHistoryCommandService creditHistoryCommandService(CreditHistoryCommandServiceImpl impl);
 
     @Binds
     abstract WalletTransactionQueryService walletTransactionQueryService(WalletTransactionQueryServiceImpl impl);

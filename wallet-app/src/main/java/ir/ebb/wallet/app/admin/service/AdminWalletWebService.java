@@ -1,6 +1,7 @@
 package ir.ebb.wallet.app.admin.service;
 
 import ir.ebb.base.security.UserPrincipal;
+import ir.ebb.common.dto.response.PaginatedResponseDTO;
 import ir.ebb.wallet.app.admin.dto.request.CreditHistorySearchRequestDTO;
 import ir.ebb.wallet.app.admin.dto.request.WalletInitCreditRequestDTO;
 import ir.ebb.wallet.app.admin.dto.request.WalletRequestDTO;
@@ -8,19 +9,21 @@ import ir.ebb.wallet.app.admin.dto.request.WalletSearchRequestDTO;
 import ir.ebb.wallet.app.admin.dto.response.CreditHistoryResponseDTO;
 import ir.ebb.wallet.app.admin.dto.response.RayanWalletResponseDTO;
 import ir.ebb.wallet.app.admin.dto.response.WalletResponseDTO;
-import ir.ebb.common.dto.response.PaginatedResponseDTO;
+
+import java.util.concurrent.CompletionStage;
 
 public interface AdminWalletWebService {
 
-    void create(String userId, Long dbsAccountNumber);
+    CompletionStage<Void> create(String userId, Long dbsAccountNumber);
 
-    PaginatedResponseDTO<WalletResponseDTO> searchWallet(WalletSearchRequestDTO request);
+    CompletionStage<PaginatedResponseDTO<WalletResponseDTO>> searchWallet(WalletSearchRequestDTO request);
 
-    void initCredit(WalletInitCreditRequestDTO request, UserPrincipal principal);
+    CompletionStage<Void> initCredit(WalletInitCreditRequestDTO request, UserPrincipal principal);
 
-    void removeCredit(WalletRequestDTO request, UserPrincipal principal);
+    CompletionStage<Void> removeCredit(WalletRequestDTO request, UserPrincipal principal);
 
-    PaginatedResponseDTO<CreditHistoryResponseDTO> searchCredit(CreditHistorySearchRequestDTO request);
+    CompletionStage<PaginatedResponseDTO<CreditHistoryResponseDTO>> searchCredit(CreditHistorySearchRequestDTO request);
 
+    /** Sync on purpose — the Rayan client + repos block (HTTP + JDBC). */
     RayanWalletResponseDTO getRayanWallet(long accountNumber);
 }

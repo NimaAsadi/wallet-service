@@ -1,14 +1,11 @@
 package ir.ebb.wallet.app.admin.transformer;
 
+import ir.ebb.external.rayan.wallet.dto.RayanWalletDTO;
 import ir.ebb.wallet.app.admin.dto.request.WalletSearchRequestDTO;
 import ir.ebb.wallet.app.admin.dto.response.RayanWalletResponseDTO;
 import ir.ebb.wallet.app.admin.dto.response.WalletResponseDTO;
-import ir.ebb.external.rayan.wallet.dto.RayanWalletDTO;
-import ir.ebb.wallet.valueobject.Wallet;
-import ir.ebb.wallet.constant.valueobject.WalletParameter;
 import ir.ebb.wallet.dto.WalletSpecificationDTO;
-import ir.ebb.wallet.entity.WalletEntity;
-import ir.ebb.wallet.entity.WalletParameterEmbedded;
+import ir.ebb.wallet.projection.entity.WalletEntity;
 
 public final class WalletTransformer {
 
@@ -33,17 +30,18 @@ public final class WalletTransformer {
                 .build();
     }
 
+    /** Flat projection wallet row → admin response (buying power = cumulative tier balances). */
     public static WalletResponseDTO adapt(WalletEntity e) {
         return WalletResponseDTO.builder()
-                .userId(null)
+                .userId(null) // the projection wallet carries no user column
                 .dbsAccountNumber(e.getAccountNumber())
-                .t0Balance(e.getT0().getBalance())
-                .t0BuyingPower(e.getT0().getBalance())
-                .t1Balance(e.getT1().getBalance())
-                .t1BuyingPower(e.getT1().getBalance() + e.getT0().getBalance())
-                .t2Balance(e.getT2().getBalance())
-                .t2BuyingPower(e.getT2().getBalance() + e.getT1().getBalance() + e.getT0().getBalance())
-                .frozen(e.getT0().getFrozen() + e.getT1().getFrozen() + e.getT2().getFrozen())
+                .t0Balance(e.getT0Balance())
+                .t0BuyingPower(e.getT0Balance())
+                .t1Balance(e.getT1Balance())
+                .t1BuyingPower(e.getT1Balance() + e.getT0Balance())
+                .t2Balance(e.getT2Balance())
+                .t2BuyingPower(e.getT2Balance() + e.getT1Balance() + e.getT0Balance())
+                .frozen(e.getT0Frozen() + e.getT1Frozen() + e.getT2Frozen())
                 .initialCredit(e.getInitialCredit())
                 .credit(e.getCredit())
                 .creditUsage(e.getInitialCredit() - e.getCredit())
@@ -51,37 +49,6 @@ public final class WalletTransformer {
                 .separCredit(e.getSeparCredit())
                 .separCreditUsage(e.getSeparInitialCredit() - e.getSeparCredit())
                 .build();
-    }
-
-    public static WalletEntity adapt(RayanWalletDTO dto) {
-        WalletEntity entity = new WalletEntity();
-        return adapt(entity, dto);
-    }
-
-    public static WalletEntity adapt(WalletEntity entity, RayanWalletDTO dto) {
-        long absInProgress = Math.abs(dto.inProgress());
-        long t0 = dto.financialRemain() - Math.abs(dto.saleT0()) - absInProgress;
-        entity.setT0(new WalletParameterEmbedded(t0, absInProgress));
-        long t1 = dto.financialRemain() - absInProgress - t0;
-        entity.setT1(new WalletParameterEmbedded(t1, 0L));
-        entity.setT2(new WalletParameterEmbedded(0L, 0L));
-        entity.setCredit(dto.customerCredit());
-        entity.setInitialCredit(dto.customerCredit());
-        return entity;
-    }
-
-    public static Wallet adapt(Wallet wallet, RayanWalletDTO dto) {
-        long absInProgress = Math.abs(dto.inProgress());
-        long t0 = dto.financialRemain() - Math.abs(dto.saleT0()) - absInProgress;
-        wallet.setT0(new WalletParameter(t0, absInProgress));
-        long t1 = dto.financialRemain() - absInProgress - t0;
-        wallet.setT1(new WalletParameter(t1, 0L));
-        wallet.setT2(new WalletParameter(0L, 0L));
-        wallet.setCredit(dto.customerCredit());
-        wallet.setInitialCredit(dto.customerCredit());
-        wallet.setSeparCredit(0L);
-        wallet.setSeparInitialCredit(0L);
-        return wallet;
     }
 
     public static RayanWalletResponseDTO adaptForAdmin(RayanWalletDTO dto) {

@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -123,13 +124,13 @@ public class WalletHttpServer extends AllDirectives {
     private Route userRoutes(UserPrincipal principal) {
         return concat(
                 path("wallet", () -> get(() ->
-                        ok(ResponseHelper.success(walletWebService.getWalletDetails(principal))))),
+                        okAsync(walletWebService.getWalletDetails(principal)))),
                 pathPrefix("turnover", () -> concat(
                         path("today", () -> get(() ->
-                                ok(ResponseHelper.success(turnoverWebService.getTodayTurnover(principal))))),
+                                okAsync(turnoverWebService.getTodayTurnover(principal)))),
                         path("types", () -> get(() -> ok(ResponseHelper.success(turnoverTypes())))),
                         pathEnd(() -> get(() -> parameterMap(params ->
-                                ok(ResponseHelper.success(turnoverWebService.getHistory(principal, bindTurnoverSearch(params)))))))
+                                okAsync(turnoverWebService.getHistory(principal, bindTurnoverSearch(params))))))
                 ))
         );
     }
@@ -139,34 +140,34 @@ public class WalletHttpServer extends AllDirectives {
     private Route bridgeRoutes(UserPrincipal principal) {
         return concat(
                 pathPrefix("wallet", () -> pathPrefix("account-number", () -> path(segment(), acct -> get(() ->
-                        ok(ResponseHelper.success(bridgeWalletWebService.getWalletDetails(Long.parseLong(acct)))))))),
+                        okAsync(bridgeWalletWebService.getWalletDetails(Long.parseLong(acct))))))),
                 pathPrefix("turnover", () -> concat(
                         path("types", () -> get(() -> ok(ResponseHelper.success(turnoverTypes())))),
                         path(segment(), acct -> concat(
                                 path("today", () -> get(() ->
-                                        ok(ResponseHelper.success(bridgeTurnoverWebService.getTodayTurnover(Long.parseLong(acct)))))),
+                                        okAsync(bridgeTurnoverWebService.getTodayTurnover(Long.parseLong(acct))))),
                                 pathEnd(() -> get(() -> parameterMap(params ->
-                                        ok(ResponseHelper.success(bridgeTurnoverWebService.getHistory(
-                                                Long.parseLong(acct), bindBridgeTurnoverSearch(params)))))))
+                                        okAsync(bridgeTurnoverWebService.getHistory(
+                                                Long.parseLong(acct), bindBridgeTurnoverSearch(params))))))
                         ))
                 )),
                 pathPrefix("bidar-deposit", () -> concat(
                         path("deposit", () -> post(() -> entity(
                                 Jackson.unmarshaller(objectMapper, BidarDepositWalletDepositRequestDTO.class),
                                 req -> ValidationDirectives.validateBody(validator, objectMapper, req,
-                                        () -> created(ResponseHelper.success(bidarDepositWalletWebService.deposit(req), 201)))))),
+                                        () -> createdAsync(bidarDepositWalletWebService.deposit(req)))))),
                         path("freeze", () -> post(() -> entity(
                                 Jackson.unmarshaller(objectMapper, BidarDepositWalletFreezeRequestDTO.class),
                                 req -> ValidationDirectives.validateBody(validator, objectMapper, req,
-                                        () -> created(ResponseHelper.success(bidarDepositWalletWebService.freeze(req), 201)))))),
+                                        () -> createdAsync(bidarDepositWalletWebService.freeze(req)))))),
                         path("unfreeze", () -> post(() -> entity(
                                 Jackson.unmarshaller(objectMapper, BidarDepositWalletUnfreezeRequestDTO.class),
                                 req -> ValidationDirectives.validateBody(validator, objectMapper, req,
-                                        () -> created(ResponseHelper.success(bidarDepositWalletWebService.unfreeze(req), 201)))))),
+                                        () -> createdAsync(bidarDepositWalletWebService.unfreeze(req)))))),
                         path("withdraw", () -> post(() -> entity(
                                 Jackson.unmarshaller(objectMapper, BidarDepositWalletSpendRequestDTO.class),
                                 req -> ValidationDirectives.validateBody(validator, objectMapper, req,
-                                        () -> created(ResponseHelper.success(bidarDepositWalletWebService.spend(req), 201))))))
+                                        () -> createdAsync(bidarDepositWalletWebService.spend(req))))))
                 ))
         );
     }
@@ -180,9 +181,9 @@ public class WalletHttpServer extends AllDirectives {
                                 post(() -> entity(Jackson.unmarshaller(objectMapper, WalletRequestDTO.class), req ->
                                         requireAuthority(principal, "PERMISSION_USERS_UPDATE", () ->
                                                 ValidationDirectives.validateBody(validator, objectMapper, req, () ->
-                                                        created(run(() -> adminWalletWebService.create(req.userId(), req.dbsAccountNumber()))))))),
+                                                        runAsync(adminWalletWebService.create(req.userId(), req.dbsAccountNumber())))))),
                                 get(() -> parameterMap(params -> requireAuthority(principal, "PERMISSION_CUSTOMERWALLET_VIEW", () ->
-                                        ok(ResponseHelper.success(adminWalletWebService.searchWallet(bindWalletSearch(params)))))))
+                                        okAsync(adminWalletWebService.searchWallet(bindWalletSearch(params))))))
                         )),
                         pathPrefix("rayan", () -> path(segment(), acct -> get(() ->
                                 requireAuthority(principal, "PERMISSION_CUSTOMERWALLET_VIEW", () ->
@@ -192,15 +193,15 @@ public class WalletHttpServer extends AllDirectives {
                                         Jackson.unmarshaller(objectMapper, WalletInitCreditRequestDTO.class), req ->
                                                 requireAuthorityAll(principal, "PERMISSION_CREDITS_ADD", "PERMISSION_USERS_SEARCH", () ->
                                                         ValidationDirectives.validateBody(validator, objectMapper, req, () ->
-                                                                created(run(() -> adminWalletWebService.initCredit(req, principal)))))))),
+                                                                runAsync(adminWalletWebService.initCredit(req, principal))))))),
                                 path("remove", () -> put(() -> entity(
                                         Jackson.unmarshaller(objectMapper, WalletRequestDTO.class), req ->
                                                 requireAuthorityAll(principal, "PERMISSION_CREDITS_UPDATE", "PERMISSION_USERS_SEARCH", () ->
                                                         ValidationDirectives.validateBody(validator, objectMapper, req, () ->
-                                                                created(run(() -> adminWalletWebService.removeCredit(req, principal)))))))),
+                                                                runAsync(adminWalletWebService.removeCredit(req, principal))))))),
                                 path("history", () -> get(() -> parameterMap(params ->
                                         requireAuthorityAll(principal, "PERMISSION_CREDITS_VIEW", "PERMISSION_USERS_SEARCH", () ->
-                                                ok(ResponseHelper.success(adminWalletWebService.searchCredit(bindCreditHistorySearch(params)))))))),
+                                                okAsync(adminWalletWebService.searchCredit(bindCreditHistorySearch(params))))))),
                                 path("status", () -> get(() -> requireAuthority(principal, "PERMISSION_CREDITS_VIEW", () ->
                                         ok(ResponseHelper.success(Arrays.stream(RayanCreditStatus.values())
                                                 .map(ConstantTransformer::enumToFixedConstantResponse).toList())))))
@@ -208,8 +209,8 @@ public class WalletHttpServer extends AllDirectives {
                 )),
                 path("wallet-transaction", () -> get(() -> parameterMap(params ->
                         requireAuthority(principal, "PERMISSION_CREDITS_VIEW", () ->
-                                ok(ResponseHelper.success(adminWalletTransactionWebService.searchWalletTransaction(
-                                        bindWalletTransactionSearch(params))))))))
+                                okAsync(adminWalletTransactionWebService.searchWalletTransaction(
+                                        bindWalletTransactionSearch(params)))))))
         );
     }
 
@@ -231,18 +232,24 @@ public class WalletHttpServer extends AllDirectives {
         return (principal.hasAuthority(a) && principal.hasAuthority(b)) ? inner.get() : complete(StatusCodes.FORBIDDEN);
     }
 
-    /** Runs a void action and returns a 201 CREATED envelope, letting exceptions reach the handler. */
-    private Route run(Runnable action) {
-        action.run();
-        return completeJson(StatusCodes.CREATED, ResponseHelper.success(201));
+    // ── async route bridges (error mapping lives in AsyncRoutes — completeWithFuture
+    //    does not run stage failures through the route ExceptionHandler) ─────────
+
+    private Route okAsync(CompletionStage<?> stage) {
+        return completeWithFuture(AsyncRoutes.complete(objectMapper, StatusCodes.OK, stage));
+    }
+
+    private Route createdAsync(CompletionStage<?> stage) {
+        return completeWithFuture(AsyncRoutes.complete(objectMapper, StatusCodes.CREATED, stage));
+    }
+
+    /** The {@code run(...)} contract: 201 CREATED with a bare {@code success(201)} envelope. */
+    private Route runAsync(CompletionStage<?> stage) {
+        return completeWithFuture(AsyncRoutes.completeCreatedAction(objectMapper, stage));
     }
 
     private Route ok(Object body) {
         return completeJson(StatusCodes.OK, body);
-    }
-
-    private Route created(Object body) {
-        return completeJson(StatusCodes.CREATED, body);
     }
 
     private Route completeJson(StatusCode status, Object body) {

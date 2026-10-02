@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import dagger.Module;
 import dagger.Provides;
-import ir.ebb.wallet.app.infra.KafkaWalletProducer;
+import ir.ebb.wallet.infrastructure.KafkaWalletProducer;
 
 import javax.inject.Singleton;
 

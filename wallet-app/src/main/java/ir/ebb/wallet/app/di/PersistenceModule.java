@@ -3,8 +3,8 @@ package ir.ebb.wallet.app.di;
 import com.typesafe.config.Config;
 import dagger.Module;
 import dagger.Provides;
-import ir.ebb.wallet.app.infra.DataSourceProvider;
-import ir.ebb.wallet.app.infra.LiquibaseMigrator;
+import ir.ebb.wallet.infrastructure.DataSourceProvider;
+import ir.ebb.wallet.infrastructure.LiquibaseMigrator;
 
 import javax.inject.Singleton;
 import javax.sql.DataSource;

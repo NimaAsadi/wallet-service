@@ -156,6 +156,20 @@ public class Wallet {
         addWalletTransaction(Math.abs(oldCredit - newCredit), walletOperationType, WalletTransactionType.ADMIN_CREDIT, WalletParameterType.CREDIT, trackingId, null, null, oldCredit, credit);
     }
 
+    /**
+     * Read-model replay of a {@code CreditAdded} delta (the aggregate's {@code validate(AddCredit)}
+     * produces it): {@code initialCredit += amount}, {@code credit += amount}, plus the
+     * {@code INCREASE_CREDIT} audit leg. A zero amount is the admin remove-credit no-op — no
+     * state change, no leg.
+     */
+    public void increaseCredit(UUID trackingId, long amount) {
+        if (amount == 0) return;
+        long oldCredit = credit;
+        initialCredit += amount;
+        credit += amount;
+        addWalletTransaction(amount, WalletOperationType.INCREASE_CREDIT, WalletTransactionType.ADMIN_CREDIT, WalletParameterType.CREDIT, trackingId, null, null, oldCredit, credit);
+    }
+
     public void decreaseSeparCredit(long value) {
         long debt = Math.min(separInitialCredit, value);
         separCredit -= debt;

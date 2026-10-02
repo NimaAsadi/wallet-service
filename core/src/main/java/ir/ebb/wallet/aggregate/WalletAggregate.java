@@ -5,6 +5,7 @@ import io.vavr.control.Try;
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.common.constant.enumeration.SettlementDelay;
 import ir.ebb.common.exception.handler.BusinessException;
+import ir.ebb.wallet.actor.WalletSnapshot;
 import ir.ebb.wallet.actor.command.*;
 import ir.ebb.wallet.actor.event.*;
 import ir.ebb.wallet.constant.valueobject.BuyingPower;
@@ -70,6 +71,43 @@ public class WalletAggregate implements WalletSerializable {
         return event.wallet();
     }
 
+    /**
+     * Defensive deep copy for the {@code WalletCreated} event handler. The event embeds the
+     * (mutable) state, and replaying must never alias it: the live state mutates through event
+     * application, and any journal implementation that replays stored objects instead of fresh
+     * deserialized copies (e.g. the pekko persistence testkit) would otherwise re-apply deltas on
+     * top of the already-mutated "historical" state — silently double-counting balances.
+     */
+    public static WalletAggregate copyOf(WalletAggregate other) {
+        WalletAggregate copy = new WalletAggregate();
+        copy.id = other.id;
+        copy.t0 = new WalletParameter(other.t0.getBalance(), other.t0.getFrozen());
+        copy.t1 = new WalletParameter(other.t1.getBalance(), other.t1.getFrozen());
+        copy.t2 = new WalletParameter(other.t2.getBalance(), other.t2.getFrozen());
+        copy.credit = other.credit;
+        copy.buyingPower = other.buyingPower;
+        copy.initialCredit = other.initialCredit;
+        copy.separCredit = other.separCredit;
+        copy.separInitialCredit = other.separInitialCredit;
+        copy.walletDebt = copyOf(other.walletDebt);
+        copy.dbsAccountNumber = other.dbsAccountNumber;
+        copy.trackingIds = new HashSet<>(other.trackingIds);
+        return copy;
+    }
+
+    private static WalletDebt copyOf(WalletDebt other) {
+        WalletDebt copy = new WalletDebt();
+        if (other == null) return copy;
+        copy.setT2Tot0Debt(other.getT2Tot0Debt());
+        copy.setT2Tot1Debt(other.getT2Tot1Debt());
+        copy.setT1Tot0Debt(other.getT1Tot0Debt());
+        copy.setT2ToCreditDebt(other.getT2ToCreditDebt());
+        copy.setT1ToCreditDebt(other.getT1ToCreditDebt());
+        copy.setT2ToSeparCreditDebt(other.getT2ToSeparCreditDebt());
+        copy.setT1ToSeparCreditDebt(other.getT1ToSeparCreditDebt());
+        return copy;
+    }
+
     public Try<WalletEvent> validate(WalletCommand command) {
         return Try.of(() -> {
            if (command instanceof Freeze freeze)
@@ -82,6 +120,8 @@ public class WalletAggregate implements WalletSerializable {
                return validate(unfreeze);
            else if (command instanceof Withdraw withdraw)
                return validate(withdraw);
+           else if (command instanceof AddCredit addCredit)
+               return validate(addCredit);
 
             throw new BusinessException(ExceptionConstants.INVALID_COMMAND);
         });
@@ -98,6 +138,8 @@ public class WalletAggregate implements WalletSerializable {
             applyEvent(unfrozen);
         else if (event instanceof Withdrew withdrew)
             applyEvent(withdrew);
+        else if (event instanceof CreditAdded creditAdded)
+            applyEvent(creditAdded);
         return this;
     }
 
@@ -123,6 +165,11 @@ public class WalletAggregate implements WalletSerializable {
             case T_PLUS_1 -> t1;
             case T_PLUS_2 -> t2;
         };
+    }
+
+    /** Immutable copy for the {@code GetWallet} read reply — see {@link WalletSnapshot#from}. */
+    public WalletSnapshot toSnapshot() {
+        return WalletSnapshot.from(this);
     }
 
     private Frozen validate(Freeze command) {
@@ -323,5 +370,21 @@ public class WalletAggregate implements WalletSerializable {
         WalletParameter walletParameter = getWalletParameter(event.settlementDelay());
         Long newBalance = walletParameter.getBalance() - event.value().value();
         walletParameter.setBalance(newBalance);
+    }
+
+    private CreditAdded validate(AddCredit command) {
+        if (trackingIds.contains(command.trackingId()))
+            throw new BusinessException(ExceptionConstants.DUPLICATE_TRACKING_ID);
+        if (command.value().value() < 0)
+            throw new BusinessException(ExceptionConstants.NOT_ACCEPTABLE);
+
+        return new CreditAdded(command.trackingId(), command.value(), this.dbsAccountNumber);
+    }
+
+    private void applyEvent(CreditAdded event) {
+        trackingIds.add(event.trackingId());
+        long amount = event.value().value();
+        this.initialCredit += amount;
+        this.credit += amount;
     }
 }

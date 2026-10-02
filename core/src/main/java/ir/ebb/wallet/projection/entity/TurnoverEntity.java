@@ -104,8 +104,4 @@ public class TurnoverEntity {
         this.trackingId = trackingId;
         this.receiptBankNumber = receiptBankNumber;
     }
-
-    public TurnoverEntity(UUID id, TurnoverOperationType turnoverOperationType, long remaining, UUID uuid) {
-
-    }
 }

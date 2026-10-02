@@ -3,15 +3,15 @@ package ir.ebb.wallet.app;
 import com.typesafe.config.Config;
 
 import ir.ebb.wallet.actor.WalletActor;
+import ir.ebb.wallet.app.di.DaggerWalletComponent;
 import ir.ebb.wallet.app.di.WalletComponent;
-import ir.ebb.wallet.app.infra.KafkaWalletProducer;
+import ir.ebb.wallet.infrastructure.KafkaWalletProducer;
 import ir.ebb.wallet.app.web.GrpcServer;
 import ir.ebb.wallet.app.web.WalletHttpServer;
 import ir.ebb.wallet.app.web.WalletJobs;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pekko.actor.typed.ActorSystem;
 import org.apache.pekko.cluster.sharding.typed.javadsl.ClusterSharding;
-import org.apache.pekko.cluster.sharding.typed.javadsl.Entity;
 import org.apache.pekko.http.javadsl.Http;
 import org.apache.pekko.http.javadsl.ServerBinding;
 import org.apache.pekko.management.cluster.bootstrap.ClusterBootstrap;
@@ -29,9 +29,9 @@ import javax.sql.DataSource;
  * reverse.
  *
  * <p>There is no actor registry: wallet entities are located exclusively via Cluster Sharding
- * ({@code WalletFacade} → {@code sharding.entityRefFor("wallet", accountNumber)}). The event
- * journal is the source of truth; bulk reads are served by the read-model tables the projection
- * populates.
+ * ({@code WalletService} → {@code sharding.entityRefFor(WalletActor.ENTITY_TYPE_KEY, id)}); all
+ * single-wallet reads are entity-served too. The event journal is the source of truth; bulk and
+ * list reads are served by the JDBC read-model tables the projection populates.
  */
 @Slf4j
 public class Main {
@@ -50,8 +50,7 @@ public class Main {
         PekkoManagement.get(actorSystem).start().toCompletableFuture().join();
         log.info("Pekko Management HTTP started on :{}", config.getInt("pekko.management.http.port"));
         ClusterBootstrap.get(actorSystem).start();
-        ClusterSharding.get(actorSystem).init(
-                Entity.of(WalletActor.ENTITY_TYPE_KEY, WalletActor::create).withRole("wallet"));
+        WalletActor.initSharding(actorSystem);
         log.info("Cluster Sharding initialized for wallet entity");
 
         // 3. next-gen wallet read-model projection (WalletActor events → wallet/wallet_debt/wallet_transaction)

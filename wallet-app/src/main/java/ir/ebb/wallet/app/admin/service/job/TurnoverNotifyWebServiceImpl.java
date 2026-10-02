@@ -1,73 +1,87 @@
 package ir.ebb.wallet.app.admin.service.job;
 
 import ir.ebb.common.constant.enumeration.SettlementDelay;
-import ir.ebb.common.exception.handler.BusinessException;
-import ir.ebb.wallet.app.infra.KafkaWalletProducer;
-import ir.ebb.wallet.constant.valueobject.BuyingPower;
-import ir.ebb.wallet.entity.TurnoverEntity;
-import ir.ebb.wallet.service.query.WalletQueryService;
+import ir.ebb.wallet.infrastructure.KafkaWalletProducer;
+import ir.ebb.wallet.projection.entity.TurnoverEntity;
+import ir.ebb.wallet.service.WalletErrors;
+import ir.ebb.wallet.service.WalletService;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.NumberFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
+/**
+ * Async keyset-paging loop: fetch a batch of account numbers → notify each sequentially →
+ * recurse past the last account number. One bad account never stops the job (per-account
+ * {@code exceptionally}); batches are processed strictly in order to keep Kafka ordering per
+ * account and bound concurrency.
+ */
 @Slf4j
+@RequiredArgsConstructor
 public class TurnoverNotifyWebServiceImpl implements TurnoverNotifyWebService {
 
     private static final int BATCH_SIZE = 100;
 
     private final TurnoverQueryService turnoverQueryService;
-    private final WalletQueryService walletQueryService;
+    private final WalletService walletService;
     private final KafkaWalletProducer kafkaWalletProducer;
     private final String turnoverNotificationTopic;
 
     private final NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
 
-    public TurnoverNotifyWebServiceImpl(TurnoverQueryService turnoverQueryService,
-                                        WalletQueryService walletQueryService,
-                                        KafkaWalletProducer kafkaWalletProducer,
-                                        String turnoverNotificationTopic) {
-        this.turnoverQueryService = turnoverQueryService;
-        this.walletQueryService = walletQueryService;
-        this.kafkaWalletProducer = kafkaWalletProducer;
-        this.turnoverNotificationTopic = turnoverNotificationTopic;
-    }
-
     @Override
-    public void aggregateUserTurnover() {
-        Long lastAccountNumber = 0L;
-        while (true) {
-            List<Long> batch = turnoverQueryService.getAccountNumberBatch(lastAccountNumber, BATCH_SIZE);
-            if (ObjectUtils.isEmpty(batch)) break;
-            processBatch(batch);
-            lastAccountNumber = batch.get(batch.size() - 1);
-        }
+    public CompletionStage<Void> aggregateUserTurnover() {
+        return page(0L);
     }
 
-    private void processBatch(List<Long> accountNumbers) {
+    private CompletionStage<Void> page(Long lastAccountNumber) {
+        return turnoverQueryService.getAccountNumberBatch(lastAccountNumber, BATCH_SIZE)
+                .thenCompose(batch -> {
+                    if (ObjectUtils.isEmpty(batch)) return CompletableFuture.completedStage(null);
+                    return processBatch(batch)
+                            .thenCompose(v -> page(batch.get(batch.size() - 1)));
+                });
+    }
+
+    private CompletionStage<Void> processBatch(List<Long> accountNumbers) {
+        CompletionStage<Void> chain = CompletableFuture.completedStage(null);
         for (Long accountNumber : accountNumbers) {
-            try {
-                List<TurnoverEntity> turnovers = turnoverQueryService.getByAccountNumber(accountNumber);
-                if (ObjectUtils.isEmpty(turnovers)) continue;
-
-                String message = buildMessage(accountNumber, turnovers);
-                if (StringUtils.isBlank(message)) continue;
-
-                Map<String, Object> notification = new HashMap<>();
-                notification.put("accountNumber", accountNumber);
-                notification.put("message", message);
-                kafkaWalletProducer.send(turnoverNotificationTopic, accountNumber.toString(), notification);
-            } catch (Exception e) {
-                log.atWarn().log("Failed to send turnover notification for accountNumber={}: {}",
-                        accountNumber, e.getMessage());
-            }
+            chain = chain.thenCompose(v -> notify(accountNumber));
         }
+        return chain;
     }
 
-    private String buildMessage(Long accountNumber, List<TurnoverEntity> turnovers) {
+    private CompletionStage<Void> notify(Long accountNumber) {
+        return turnoverQueryService.getByAccountNumber(accountNumber)
+                .thenCompose(turnovers -> {
+                    if (ObjectUtils.isEmpty(turnovers)) return CompletableFuture.completedStage(null);
+                    return buildMessage(accountNumber, turnovers).thenApply(message -> {
+                        if (StringUtils.isBlank(message)) return null;
+                        Map<String, Object> notification = new HashMap<>();
+                        notification.put("accountNumber", accountNumber);
+                        notification.put("message", message);
+                        kafkaWalletProducer.send(turnoverNotificationTopic, accountNumber.toString(), notification);
+                        return (Void) null;
+                    });
+                })
+                .exceptionally(error -> {
+                    log.atWarn().log("Failed to send turnover notification for accountNumber={}: {}",
+                            accountNumber, WalletErrors.rootCause(error).getMessage());
+                    return null;
+                });
+    }
+
+    private CompletionStage<String> buildMessage(Long accountNumber, List<TurnoverEntity> turnovers) {
         StringBuilder message = new StringBuilder(256);
 
         for (TurnoverEntity turnover : turnovers) {
@@ -75,9 +89,8 @@ public class TurnoverNotifyWebServiceImpl implements TurnoverNotifyWebService {
                     .ifPresent(formatted -> message.append(formatted).append('\n'));
         }
 
-        appendBuyingPower(message, accountNumber);
-
-        return message.toString().trim();
+        return appendBuyingPower(message, accountNumber)
+                .thenApply(v -> message.toString().trim());
     }
 
     private Optional<String> formatTurnover(TurnoverEntity turnover) {
@@ -122,24 +135,24 @@ public class TurnoverNotifyWebServiceImpl implements TurnoverNotifyWebService {
         );
     }
 
-    private void appendBuyingPower(StringBuilder message, Long accountNumber) {
-        try {
-            BuyingPower buyingPower =
-                    walletQueryService.getBuyingPower(accountNumber, SettlementDelay.T_PLUS_2);
-
-            if (!message.isEmpty()) {
-                message.append('\n');
-            }
-
-            message.append("مانده: ")
-                    .append(format(buyingPower.sum(false)))
-                    .append(" ریال");
-
-        } catch (BusinessException e) {
-            log.atWarn()
-                    .setCause(e)
-                    .log("Unable to retrieve buying power for accountNumber={}", accountNumber);
-        }
+    /** Buying power is best-effort: a missing wallet (or any failure) only drops the balance line. */
+    private CompletionStage<Void> appendBuyingPower(StringBuilder message, Long accountNumber) {
+        return walletService.getBuyingPower(accountNumber, SettlementDelay.T_PLUS_2)
+                .thenApply(buyingPower -> {
+                    if (!message.isEmpty()) {
+                        message.append('\n');
+                    }
+                    message.append("مانده: ")
+                            .append(format(buyingPower.sum(false)))
+                            .append(" ریال");
+                    return (Void) null;
+                })
+                .exceptionally(error -> {
+                    log.atWarn()
+                            .setCause(WalletErrors.rootCause(error))
+                            .log("Unable to retrieve buying power for accountNumber={}", accountNumber);
+                    return null;
+                });
     }
 
     private String format(Number value) {

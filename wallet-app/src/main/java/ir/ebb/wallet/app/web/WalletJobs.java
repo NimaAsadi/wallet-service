@@ -35,14 +35,17 @@ public class WalletJobs {
         scheduler.schedule("rayan-wallets", rayanSchedule, this::rayanSync);
         scheduler.schedule("rayan-wallets-backup", rayanBackupSchedule, this::rayanSync);
         scheduler.schedule("rayan-wallets-remove", rayanRemoveSchedule, this::rayanRemove);
-        scheduler.schedule("turnover-notify", turnoverNotifySchedule, turnoverNotifyWebService::aggregateUserTurnover);
+        scheduler.schedule("turnover-notify", turnoverNotifySchedule, () ->
+                turnoverNotifyWebService.aggregateUserTurnover()
+                        .whenComplete((v, error) -> {
+                            if (error != null) log.error("turnover-notify job failed", error);
+                        }));
     }
 
     private void rayanSync() {
         try {
             Map<Long, RayanWalletDTO> all = rayanWalletQueryService.getAllWallets();
             rayanWalletJobService.updateFromRayan(all);
-            rayanWalletJobService.syncWallets(all);
         } catch (ir.ebb.common.exception.handler.ApplicationException e) {
             log.error("Rayan sync job failed", e);
         }

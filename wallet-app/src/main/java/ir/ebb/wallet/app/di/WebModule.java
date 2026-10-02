@@ -21,7 +21,7 @@ import ir.ebb.wallet.app.bridge.service.BridgeTurnoverWebService;
 import ir.ebb.wallet.app.bridge.service.BridgeTurnoverWebServiceImpl;
 import ir.ebb.wallet.app.bridge.service.BridgeWalletWebService;
 import ir.ebb.wallet.app.bridge.service.BridgeWalletWebServiceImpl;
-import ir.ebb.wallet.app.infra.KafkaWalletProducer;
+import ir.ebb.wallet.infrastructure.KafkaWalletProducer;
 import ir.ebb.wallet.app.user.service.TurnoverWebService;
 import ir.ebb.wallet.app.user.service.TurnoverWebServiceImpl;
 import ir.ebb.wallet.app.user.service.WalletWebService;
@@ -29,13 +29,15 @@ import ir.ebb.wallet.app.user.service.WalletWebServiceImpl;
 import ir.ebb.wallet.app.web.BridgeGrpcAuthInterceptor;
 import ir.ebb.wallet.app.web.GrpcServer;
 import ir.ebb.wallet.app.web.JwtVerifier;
-import ir.ebb.wallet.repository.credit.CreditHistoryRepository;
+import ir.ebb.wallet.service.BlockingExecutor;
+import ir.ebb.wallet.service.WalletService;
+import ir.ebb.wallet.service.credit.command.CreditHistoryCommandService;
 import ir.ebb.wallet.service.credit.query.CreditHistoryQueryService;
 import ir.ebb.wallet.service.query.WalletQueryService;
 import ir.ebb.wallet.service.turnover.query.TurnoverQueryService;
-import ir.ebb.wallet.wallet.WalletFacade;
 
 import javax.inject.Singleton;
+import java.util.concurrent.Executor;
 
 /** Web services (user/bridge/admin audiences), JWT verifiers, and the gRPC server. */
 @Module
@@ -79,16 +81,17 @@ public abstract class WebModule {
     @Provides
     @Singleton
     public static AdminWalletWebService adminWalletWebService(
-            WalletFacade walletFacade,
             WalletQueryService walletQueryService,
+            WalletService walletService,
             ir.ebb.external.rayan.wallet.service.query.RayanWalletQueryService rayanWalletQueryService,
             ir.ebb.external.rayan.wallet.service.command.RayanWalletCommandService rayanWalletCommandService,
             CreditHistoryQueryService creditHistoryQueryService,
-            CreditHistoryRepository creditHistoryRepository,
+            CreditHistoryCommandService creditHistoryCommandService,
+            @BlockingExecutor Executor blockingExecutor,
             Config config) {
-        return new AdminWalletWebServiceImpl(walletFacade, walletQueryService, rayanWalletQueryService,
-                rayanWalletCommandService, creditHistoryQueryService, creditHistoryRepository,
-                config.getBoolean("wallet.credit.active"));
+        return new AdminWalletWebServiceImpl(walletQueryService, walletService, rayanWalletQueryService,
+                rayanWalletCommandService, creditHistoryQueryService, creditHistoryCommandService,
+                blockingExecutor, config.getBoolean("wallet.credit.active"));
     }
 
     /** Provided here (not {@code @Inject}) because of the topic-name config param. */
@@ -96,10 +99,10 @@ public abstract class WebModule {
     @Singleton
     public static TurnoverNotifyWebService turnoverNotifyWebService(
             TurnoverQueryService turnoverQueryService,
-            WalletQueryService walletQueryService,
+            WalletService walletService,
             KafkaWalletProducer kafkaWalletProducer,
             Config config) {
-        return new TurnoverNotifyWebServiceImpl(turnoverQueryService, walletQueryService, kafkaWalletProducer,
+        return new TurnoverNotifyWebServiceImpl(turnoverQueryService, walletService, kafkaWalletProducer,
                 config.getString("wallet.kafka.topic.turnover-notification"));
     }
 

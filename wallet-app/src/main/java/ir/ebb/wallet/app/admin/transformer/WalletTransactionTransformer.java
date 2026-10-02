@@ -3,7 +3,7 @@ package ir.ebb.wallet.app.admin.transformer;
 import ir.ebb.wallet.app.admin.dto.request.WalletTransactionSearchRequestDTO;
 import ir.ebb.wallet.app.admin.dto.response.WalletTransactionResponseDTO;
 import ir.ebb.wallet.dto.WalletTransactionSpecificationDTO;
-import ir.ebb.wallet.entity.WalletTransactionEntity;
+import ir.ebb.wallet.projection.entity.WalletTransactionEntity;
 
 public final class WalletTransactionTransformer {
 
@@ -21,7 +21,7 @@ public final class WalletTransactionTransformer {
     public static WalletTransactionResponseDTO adapt(WalletTransactionEntity e) {
         return new WalletTransactionResponseDTO(
                 e.getWalletTransactionType(),
-                null,
+                null, // the projection wallet_transaction carries no user column
                 e.getWalletOperationType(),
                 e.getWalletParameterType(),
                 e.getAmount()

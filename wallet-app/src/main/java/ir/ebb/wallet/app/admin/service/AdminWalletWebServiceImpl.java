@@ -1,16 +1,14 @@
 package ir.ebb.wallet.app.admin.service;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import ir.ebb.base.exception.ExceptionConstants;
 import ir.ebb.base.security.UserPrincipal;
-import ir.ebb.common.dto.request.PageRequest;
-import ir.ebb.common.dto.response.Page;
 import ir.ebb.common.dto.response.PaginatedResponseDTO;
 import ir.ebb.common.exception.handler.BusinessException;
 import ir.ebb.external.rayan.wallet.dto.RayanInitCreditResponseDTO;
 import ir.ebb.external.rayan.wallet.dto.RayanWalletDTO;
 import ir.ebb.external.rayan.wallet.service.command.RayanWalletCommandService;
 import ir.ebb.external.rayan.wallet.service.query.RayanWalletQueryService;
-import ir.ebb.wallet.valueobject.Wallet;
 import ir.ebb.wallet.app.admin.dto.request.CreditHistorySearchRequestDTO;
 import ir.ebb.wallet.app.admin.dto.request.WalletInitCreditRequestDTO;
 import ir.ebb.wallet.app.admin.dto.request.WalletRequestDTO;
@@ -21,122 +19,130 @@ import ir.ebb.wallet.app.admin.dto.response.WalletResponseDTO;
 import ir.ebb.wallet.app.admin.transformer.CreditHistoryTransformer;
 import ir.ebb.wallet.app.admin.transformer.WalletTransformer;
 import ir.ebb.wallet.constant.enumeration.RayanCreditStatus;
-import ir.ebb.wallet.entity.CreditHistoryEntity;
-import ir.ebb.wallet.entity.WalletEntity;
-import ir.ebb.wallet.repository.credit.CreditHistoryRepository;
+import ir.ebb.wallet.dto.AddCreditDTO;
+import ir.ebb.wallet.dto.CreateWalletDTO;
+import ir.ebb.wallet.projection.entity.CreditHistoryEntity;
+import ir.ebb.wallet.service.BlockingExecutor;
+import ir.ebb.wallet.service.WalletErrors;
+import ir.ebb.wallet.service.WalletService;
+import ir.ebb.wallet.service.credit.command.CreditHistoryCommandService;
 import ir.ebb.wallet.service.credit.query.CreditHistoryQueryService;
 import ir.ebb.wallet.service.query.WalletQueryService;
-import ir.ebb.wallet.wallet.WalletFacade;
-import ir.ebb.wallet.wallet.WalletState;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 @Slf4j
+@Singleton
 public class AdminWalletWebServiceImpl implements AdminWalletWebService {
 
-    private final WalletFacade walletFacade;
     private final WalletQueryService walletQueryService;
+    private final WalletService walletService;
     private final RayanWalletQueryService rayanWalletQueryService;
     private final RayanWalletCommandService rayanWalletCommandService;
     private final CreditHistoryQueryService creditHistoryQueryService;
-    private final CreditHistoryRepository creditHistoryRepository;
+    private final CreditHistoryCommandService creditHistoryCommandService;
+    private final Executor blockingExecutor;
     private final boolean activeCredit;
 
-    public AdminWalletWebServiceImpl(WalletFacade walletFacade,
-                                     WalletQueryService walletQueryService,
+    @Inject
+    public AdminWalletWebServiceImpl(WalletQueryService walletQueryService,
+                                     WalletService walletService,
                                      RayanWalletQueryService rayanWalletQueryService,
                                      RayanWalletCommandService rayanWalletCommandService,
                                      CreditHistoryQueryService creditHistoryQueryService,
-                                     CreditHistoryRepository creditHistoryRepository,
-
+                                     CreditHistoryCommandService creditHistoryCommandService,
+                                     @BlockingExecutor Executor blockingExecutor,
                                      boolean activeCredit) {
-        this.walletFacade = walletFacade;
         this.walletQueryService = walletQueryService;
+        this.walletService = walletService;
         this.rayanWalletQueryService = rayanWalletQueryService;
         this.rayanWalletCommandService = rayanWalletCommandService;
         this.creditHistoryQueryService = creditHistoryQueryService;
-        this.creditHistoryRepository = creditHistoryRepository;
+        this.creditHistoryCommandService = creditHistoryCommandService;
+        this.blockingExecutor = blockingExecutor;
         this.activeCredit = activeCredit;
     }
 
+    /**
+     * Creates the sharded wallet entity. The legacy Rayan seed/reconcile is gone — the read model
+     * is fed exclusively by the projection. {@code userId} is accepted for API stability only;
+     * the projection wallet carries no user column.
+     */
     @Override
-    public void create(String userId, Long dbsAccountNumber) {
-        try {
-            User user = User.of(UUID.fromString(userId), dbsAccountNumber);
-            if (!walletQueryService.existsWallet(user)) {
-                UUID walletId = UUID.randomUUID();
-                walletFacade.createWallet(dbsAccountNumber, walletId);
-                // Seed initial balances from the authoritative Rayan snapshot (fire-and-forget reconcile).
-                RayanWalletDTO rayanWalletDTO = rayanWalletQueryService.findUserWallet(dbsAccountNumber);
-                Wallet seed = new Wallet(dbsAccountNumber);
-                seed.setId(walletId);
-                seed.setAccountNumber(dbsAccountNumber);
-                WalletTransformer.adapt(seed, rayanWalletDTO);
-                walletFacade.reconcileFromRayan(WalletState.fromAggregate(seed, List.of()));
-            }
-        } catch (Exception e) {
-            log.atError().log("create wallet failed for userId={} account={}: {}", userId, dbsAccountNumber, e.getMessage());
-            throw new BusinessException(e.getMessage(), 5001);
-        }
+    public CompletionStage<Void> create(String userId, Long dbsAccountNumber) {
+        return walletQueryService.existsWallet(dbsAccountNumber)
+                .thenCompose(exists -> exists
+                        ? CompletableFuture.<Void>completedStage(null)
+                        : walletService.createWallet(new CreateWalletDTO(dbsAccountNumber)).thenApply(v -> (Void) null))
+                .exceptionally(error -> {
+                    Throwable cause = WalletErrors.rootCause(error);
+                    log.atError().log("create wallet failed for userId={} account={}: {}",
+                            userId, dbsAccountNumber, cause.getMessage());
+                    throw new BusinessException(cause.getMessage(), 5001);
+                });
     }
 
     @Override
-    public PaginatedResponseDTO<WalletResponseDTO> searchWallet(WalletSearchRequestDTO request) {
-        PageRequest pageRequest = request.toPageRequest();
-        Page<WalletEntity> page = walletQueryService.findAll(WalletTransformer.adapt(request), pageRequest);
-        return new PaginatedResponseDTO<>(page, WalletTransformer::adapt);
+    public CompletionStage<PaginatedResponseDTO<WalletResponseDTO>> searchWallet(WalletSearchRequestDTO request) {
+        return walletQueryService.findAll(WalletTransformer.adapt(request), request.toPageRequest())
+                .thenApply(page -> new PaginatedResponseDTO<>(page, WalletTransformer::adapt));
     }
 
     @Override
-    public void initCredit(WalletInitCreditRequestDTO request, UserPrincipal principal) {
+    public CompletionStage<Void> initCredit(WalletInitCreditRequestDTO request, UserPrincipal principal) {
         if (!activeCredit) {
             throw new BusinessException(ExceptionConstants.NOT_ACCEPTABLE.getMessage(),
                     ExceptionConstants.NOT_ACCEPTABLE.getCode());
         }
-        UUID adminId = principal.keycloakId();
-        String adminFullName = principal.name();
-        Wallet wallet = walletQueryService.getWallet(request.walletRequestDTO().dbsAccountNumber());
-
-        CreditHistoryEntity creditHistory = new CreditHistoryEntity(wallet.getAccountNumber(), request.credit(),
-                RayanCreditStatus.PENDING, adminId, adminFullName);
-        // Apply the credit ceiling through the event-sourced entity (trackingId = the credit-history id, for idempotency).
-        walletFacade.addCredit(creditHistory.getId(), wallet.getAccountNumber(), request.credit());
-        // Call Rayan and record the outcome as a credit-history audit row (not event-sourced).
-        RayanInitCreditResponseDTO response = rayanWalletCommandService.initCredit(
-                request.credit(), request.walletRequestDTO().dbsAccountNumber());
-        creditHistory.setStatus(response.isSuccessful() ? RayanCreditStatus.SENT : RayanCreditStatus.ERROR);
-        creditHistory.setErrorMessage(response.getErrorMessage());
-        creditHistoryRepository.save(creditHistory);
+        Long accountNumber = request.walletRequestDTO().dbsAccountNumber();
+        // The credit-history id doubles as the actor-side AddCredit idempotency key.
+        UUID trackingId = UuidCreator.getTimeOrderedEpoch();
+        CreditHistoryEntity creditHistory = new CreditHistoryEntity(accountNumber, request.credit(),
+                RayanCreditStatus.PENDING, trackingId, principal.name());
+        return walletQueryService.getWalletEntity(accountNumber)
+                .thenCompose(wallet -> walletService.addCredit(new AddCreditDTO(accountNumber, trackingId, request.credit())))
+                .thenCompose(done -> callRayanAndRecord(creditHistory, request.credit(), accountNumber));
     }
 
     @Override
-    public void removeCredit(WalletRequestDTO request, UserPrincipal principal) {
+    public CompletionStage<Void> removeCredit(WalletRequestDTO request, UserPrincipal principal) {
         if (!activeCredit) {
             throw new BusinessException(ExceptionConstants.NOT_ACCEPTABLE.getMessage(),
                     ExceptionConstants.NOT_ACCEPTABLE.getCode());
         }
-        UUID adminId = principal.keycloakId();
-        String adminFullName = principal.name();
-        Wallet wallet = walletQueryService.getWallet(request.dbsAccountNumber());
+        Long accountNumber = request.dbsAccountNumber();
+        UUID trackingId = UuidCreator.getTimeOrderedEpoch();
+        CreditHistoryEntity creditHistory = new CreditHistoryEntity(accountNumber, 0L,
+                RayanCreditStatus.PENDING, trackingId, principal.name());
+        return walletQueryService.getWalletEntity(accountNumber)
+                .thenCompose(wallet -> walletService.addCredit(new AddCreditDTO(accountNumber, trackingId, 0L)))
+                .thenCompose(done -> callRayanAndRecord(creditHistory, 0L, accountNumber));
+    }
 
-
-        CreditHistoryEntity creditHistory = new CreditHistoryEntity(wallet.getAccountNumber(), 0L,
-                RayanCreditStatus.PENDING, adminId, adminFullName);
-        walletFacade.addCredit(creditHistory.getId(), wallet.getAccountNumber(), 0L);
-        RayanInitCreditResponseDTO response = rayanWalletCommandService.initCredit(0L, request.dbsAccountNumber());
-        creditHistory.setStatus(response.isSuccessful() ? RayanCreditStatus.SENT : RayanCreditStatus.ERROR);
-        creditHistory.setErrorMessage(response.getErrorMessage());
-        creditHistoryRepository.save(creditHistory);
+    /**
+     * The Rayan client blocks (HTTP + login + up to 3 retries) — it must never run on a Pekko
+     * dispatcher or an R2DBC/reactor thread, hence the blocking-dispatcher offload.
+     */
+    private CompletionStage<Void> callRayanAndRecord(CreditHistoryEntity creditHistory, long credit, long accountNumber) {
+        return CompletableFuture
+                .supplyAsync(() -> rayanWalletCommandService.initCredit(credit, accountNumber), blockingExecutor)
+                .thenCompose((RayanInitCreditResponseDTO response) -> {
+                    creditHistory.setStatus(response.isSuccessful() ? RayanCreditStatus.SENT : RayanCreditStatus.ERROR);
+                    creditHistory.setErrorMessage(response.getErrorMessage());
+                    return creditHistoryCommandService.save(creditHistory);
+                });
     }
 
     @Override
-    public PaginatedResponseDTO<CreditHistoryResponseDTO> searchCredit(CreditHistorySearchRequestDTO request) {
-        PageRequest pageRequest = request.toPageRequest();
-        Page<CreditHistoryEntity> page = creditHistoryQueryService.findAll(
-                CreditHistoryTransformer.adapt(request), pageRequest);
-        return new PaginatedResponseDTO<>(page, CreditHistoryTransformer::adapt);
+    public CompletionStage<PaginatedResponseDTO<CreditHistoryResponseDTO>> searchCredit(CreditHistorySearchRequestDTO request) {
+        return creditHistoryQueryService.findAll(CreditHistoryTransformer.adapt(request), request.toPageRequest())
+                .thenApply(page -> new PaginatedResponseDTO<>(page, CreditHistoryTransformer::adapt));
     }
 
     @Override

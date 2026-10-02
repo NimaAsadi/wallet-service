@@ -1,4 +1,4 @@
-package ir.ebb.wallet.app.infra;
+package ir.ebb.wallet.infrastructure;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;

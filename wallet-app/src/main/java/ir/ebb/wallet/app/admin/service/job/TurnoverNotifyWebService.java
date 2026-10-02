@@ -1,5 +1,8 @@
 package ir.ebb.wallet.app.admin.service.job;
 
+import java.util.concurrent.CompletionStage;
+
 public interface TurnoverNotifyWebService {
-    void aggregateUserTurnover();
+
+    CompletionStage<Void> aggregateUserTurnover();
 }

@@ -58,7 +58,9 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
                                 .thenReply(createWallet.replyTo(), param -> StatusReply.ack()))
                 .onCommand(WalletCommand.class, (aggregate, command) -> {
                     context.getLog().atError().log("Wallet not found for command {}", command);
-                    return Effect().none().thenReply(command.replyTo(), param -> StatusReply.error(new BusinessException("Wallet Not Found", -1)));
+                    return Effect().none().thenReply(command.replyTo(), param -> StatusReply.error(
+                            new BusinessException(ExceptionConstants.WALLET_NOT_EXIST.getMessage(),
+                                    ExceptionConstants.WALLET_NOT_EXIST.getCode())));
                 });
 
         builder.forNonNullState()
@@ -67,6 +69,14 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
                 .onCommand(Deposit.class, this::handleCommand)
                 .onCommand(Unfreeze.class,this::handleCommand)
                 .onCommand(Withdraw.class,this::handleCommand)
+                .onCommand(AddCredit.class,this::handleCommand)
+                // Read-only, strongly-consistent reads — served from the in-memory aggregate,
+                // nothing persisted, no idempotency/tracking check.
+                .onCommand(GetWallet.class, (aggregate, getWallet) ->
+                        Effect().none().thenReply(getWallet.replyTo(), __ -> StatusReply.success(aggregate.toSnapshot())))
+                .onCommand(GetBuyingPower.class, (aggregate, getBuyingPower) ->
+                        Effect().none().thenReply(getBuyingPower.replyTo(), __ ->
+                                StatusReply.success(aggregate.buyingPower(getBuyingPower.settlementDelay()))))
                 .onAnyCommand(command -> Effect().none()
                         .thenReply(command.replyTo(), param -> StatusReply.error(new BusinessException(ExceptionConstants.INVALID_COMMAND))));
         return builder.build();
@@ -77,7 +87,9 @@ public class WalletActor extends EventSourcedBehavior<WalletCommand, WalletEvent
         var builder = newEventHandlerBuilder();
 
         builder.forNullState()
-                .onEvent(WalletCreated.class, walletCreated -> WalletAggregate.applyEvent(walletCreated))
+                // Deep copy, never alias: see WalletAggregate.copyOf — the event embeds the state
+                // and the live state mutates on every applied event.
+                .onEvent(WalletCreated.class, walletCreated -> WalletAggregate.copyOf(walletCreated.wallet()))
                 .onAnyEvent(walletEvent -> {
                     context.getLog().atError().log("Event {} is not for null state", walletEvent);
                     return null;

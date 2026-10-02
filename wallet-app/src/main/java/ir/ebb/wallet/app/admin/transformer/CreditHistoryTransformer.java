@@ -3,7 +3,7 @@ package ir.ebb.wallet.app.admin.transformer;
 import ir.ebb.wallet.app.admin.dto.request.CreditHistorySearchRequestDTO;
 import ir.ebb.wallet.app.admin.dto.response.CreditHistoryResponseDTO;
 import ir.ebb.wallet.dto.CreditSpecificationDTO;
-import ir.ebb.wallet.entity.CreditHistoryEntity;
+import ir.ebb.wallet.projection.entity.CreditHistoryEntity;
 
 import java.time.ZoneOffset;
 
@@ -26,19 +26,20 @@ public final class CreditHistoryTransformer {
         Long createdAt = e.getCreatedAt() != null
                 ? e.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli()
                 : null;
-        return null;
-        /*return new CreditHistoryResponseDTO(
+        // The user-derived fields (nationalCode/fullName/accountName/fatherName) have no source in
+        // the projection credit_history table — it carries accountNumber/createdBy only.
+        return new CreditHistoryResponseDTO(
                 e.getId(),
                 createdAt,
                 e.getCreatedBy(),
-                e.getUser().getNationalCode(),
-                e.getUser().getFullName(),
-                e.getUser().getAccountName(),
-                e.getUser().getFatherName(),
+                null,
+                null,
+                null,
+                null,
                 e.getAmount(),
                 e.getStatus(),
-                e.getStatus().name(),
+                e.getStatus() != null ? e.getStatus().name() : null,
                 e.getErrorMessage()
-        );*/
+        );
     }
 }
