@@ -32,7 +32,7 @@ public class WalletServiceImpl implements WalletService {
         return unwrap(sharding
                 .entityRefFor(WalletActor.ENTITY_TYPE_KEY, entityId(dbsAccountNumber))
                 .askWithStatus(
-                        (ActorRef<StatusReply<WalletSnapshot>> replyTo) -> new GetWallet(replyTo),
+                        GetWallet::new,
                         ASK_TIMEOUT
                 ));
     }
